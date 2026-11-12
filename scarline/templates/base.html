@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="description" content="SCARLINE — platform belajar Persamaan Garis Lurus untuk SMP kelas VIII. Discover the Line, Master the Equation!">
+  <title>{% block title %}SCARLINE{% endblock %} · SCARLINE</title>
+  <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/scarline.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <a class="skip" href="#main">Lewati ke konten</a>
+  {% if header %}
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('pages.dashboard') }}" aria-label="SCARLINE — ke Markas">
+      <span class="brand-mark">{{ scar('welcome', 34, label='') }}</span>
+      <span class="brand-word">SCAR<span>LINE</span></span>
+    </a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="mainnav" data-nav-toggle>{{ icon('menu', 22) }}<span class="sr">Menu</span></button>
+    <nav id="mainnav" class="mainnav" aria-label="Navigasi utama">
+      {% set items = [('pages.dashboard','Markas','home'),('pages.adventure_map','Peta','map'),('pages.lab','Lab','lab'),('pages.training','Latihan','target'),('pages.playground','Playground','gamepad'),('pages.final','Final','trophy')] %}
+      {% for ep, label, ic in items %}
+        {% set href = url_for(ep) %}
+        <a href="{{ href }}" class="{{ 'active' if current_path.startswith(href) or (ep=='pages.training' and current_path.startswith('/daily')) or (ep=='pages.adventure_map' and current_path.startswith('/mission')) }}">{{ icon(ic, 18) }}<span>{{ label }}</span></a>
+      {% endfor %}
+      <div class="nav-user">
+        <a href="{{ url_for('pages.profile') }}" class="user-chip" title="Profil">
+          <span class="lvl">Lv {{ header.level.level }}</span>
+          <span class="who">{{ header.profile.username }}</span>
+          <span class="xp" data-header-xp>{{ header.level.xp }} XP</span>
+        </a>
+        <a href="{{ url_for('pages.achievements') }}" class="icon-link" title="Lencana">{{ icon('award', 20) }}<span class="sr-md">Lencana</span></a>
+        <a href="{{ url_for('pages.history') }}" class="icon-link" title="Riwayat">{{ icon('history', 20) }}<span class="sr-md">Riwayat</span></a>
+        <form method="post" action="{{ url_for('auth.logout') }}" class="inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="icon-link" title="Keluar">{{ icon('logout', 20) }}<span class="sr-md">Keluar</span></button>
+        </form>
+      </div>
+    </nav>
+  </header>
+  {% else %}
+  <header class="topbar public">
+    <a class="brand" href="{{ url_for('pages.landing') }}" aria-label="SCARLINE — beranda">
+      <span class="brand-mark">{{ scar('welcome', 34, label='') }}</span>
+      <span class="brand-word">SCAR<span>LINE</span></span>
+    </a>
+    <nav class="pubnav" aria-label="Akun">
+      <a href="{{ url_for('auth.login') }}" class="btn btn-ghost btn-sm">Masuk</a>
+      <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-sm">Buat Akun</a>
+    </nav>
+  </header>
+  {% endif %}
+
+  <div class="flash-stack" aria-live="polite">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="flash flash-{{ cat }}" role="status"><span>{{ msg }}</span><button type="button" class="flash-x" aria-label="Tutup" data-dismiss>{{ icon('x', 16) }}</button></div>
+      {% endfor %}
+    {% endwith %}
+  </div>
+
+  <main id="main" class="{% block main_class %}page{% endblock %}">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <span class="brand-word small">SCAR<span>LINE</span></span>
+      <span>Discover the Line, Master the Equation!</span>
+      <span class="muted">Materi Persamaan Garis Lurus · SMP Kelas VIII</span>
+    </div>
+  </footer>
+
+  <div class="toast-stack" id="toasts" aria-live="polite"></div>
+  <template id="scar-template">{{ scar('happy', 64, label='') }}</template>
+  <script src="{{ url_for('static', filename='js/core.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

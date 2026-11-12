@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block title %}Unlock the Mystery of Straight Lines{% endblock %}
+{% block content %}
+<section class="hero">
+  <div>
+    <span class="tagline">DISCOVER THE LINE, MASTER THE EQUATION!</span>
+    <h1>UNLOCK THE MYSTERY OF <em>STRAIGHT LINES!</em></h1>
+    <p class="hero-lead">Belajar persamaan garis lurus menjadi lebih seru melalui petualangan, simulasi, dan permainan matematika interaktif bersama SCAR.</p>
+    <div class="row" style="margin-top:22px">
+      {% if logged_in %}
+        <a class="btn btn-primary btn-lg" href="{{ url_for('pages.dashboard') }}">{{ icon('play', 18) }} LANJUTKAN PETUALANGAN</a>
+      {% else %}
+        <a class="btn btn-primary btn-lg" href="{{ url_for('auth.login') }}">{{ icon('play', 18) }} MULAI PETUALANGAN</a>
+        <a class="btn btn-lg" href="{{ url_for('auth.register') }}">{{ icon('user', 18) }} BUAT AKUN</a>
+      {% endif %}
+    </div>
+    <div class="scar-say" style="margin-top:26px;max-width:520px">
+      {{ scar('welcome', 70) }}
+      <div class="bubble">Halo, Line Explorer! SCAR siap mengajakmu menjelajahi dunia persamaan garis lurus!</div>
+    </div>
+  </div>
+  <div class="hero-art" aria-hidden="true">
+    <div class="hero-plane" id="hero-plane"></div>
+    <span class="formula-float" style="left:-4%;top:8%">m = Δy/Δx</span>
+    <span class="formula-float" style="right:0;top:-2%;animation-delay:.8s">y = mx + c</span>
+    <span class="formula-float" style="left:4%;bottom:14%;animation-delay:1.6s">m₁ × m₂ = −1</span>
+    {{ scar('celebrate', 260, cls='idle-bob') }}
+  </div>
+</section>
+
+<section class="section grid cols-2" id="about" style="align-items:center">
+  <div class="notebook">
+    <span class="eyebrow">About SCARLINE</span>
+    <h2>Laboratorium matematika yang penuh misteri</h2>
+    <p>SCARLINE adalah platform pembelajaran interaktif yang membantu siswa SMP kelas VIII memahami <b>persamaan garis lurus</b> melalui visualisasi, simulasi, latihan, dan permainan.</p>
+    <p>Kamu tidak sekadar menghafal rumus: kamu menggeser titik, mengubah gradien, dan melihat sendiri bagaimana persamaan membentuk garis — dan bagaimana garis bisa “dibaca” menjadi persamaan.</p>
+  </div>
+  <div class="board">
+    <h3>SCARLINE WORLD</h3>
+    <p class="muted">Tujuh wilayah koordinat menunggu dibuka. Setiap wilayah menyimpan satu rahasia garis lurus.</p>
+    <ol style="margin:0;padding-left:20px;line-height:1.9;font-weight:700">
+      {% for l in lessons %}<li>{{ l.region }} <span class="muted small">— {{ l.title }}</span></li>{% endfor %}
+      <li style="color:var(--yellow)">Final Line Challenge</li>
+    </ol>
+  </div>
+</section>
+
+<section class="section" id="learn">
+  <div class="section-head">
+    <div><span class="eyebrow">What will you learn?</span><h2>Peta materi Persamaan Garis Lurus</h2></div>
+    <p class="muted">Disusun bertahap: dari titik koordinat sampai memecahkan masalah sehari-hari.</p>
+  </div>
+  <ul class="learn-list">
+    <li>Mengenal koordinat Kartesius</li>
+    <li>Memahami konsep persamaan garis lurus</li>
+    <li>Menentukan gradien</li>
+    <li>Menentukan persamaan garis</li>
+    <li>Menggambar grafik garis lurus</li>
+    <li>Memahami hubungan dua garis</li>
+    <li>Penerapan persamaan garis lurus dalam kehidupan sehari-hari</li>
+  </ul>
+</section>
+
+<section class="section" id="features">
+  <div class="section-head"><div><span class="eyebrow">Featured features</span><h2>Peralatan laboratorium SCAR</h2></div></div>
+  <div class="feature-strip">
+    <div>{{ icon('book', 28) }}<strong>Interactive Lessons</strong><span>7 misi bertahap dengan contoh & mini quiz</span></div>
+    <div>{{ icon('lab', 28) }}<strong>Coordinate Laboratory</strong><span>Tambah, geser, hubungkan titik</span></div>
+    <div>{{ icon('mountain', 28) }}<strong>Gradient Simulator</strong><span>Rasakan positif, negatif, nol, vertikal</span></div>
+    <div>{{ icon('calc', 28) }}<strong>Equation Calculator</strong><span>Langkah penyelesaian otomatis</span></div>
+    <div>{{ icon('gamepad', 28) }}<strong>Mathematical Games</strong><span>5 game dengan mekanisme berbeda</span></div>
+    <div>{{ icon('trophy', 28) }}<strong>Final Challenge</strong><span>Evaluasi lengkap + pembahasan</span></div>
+    <div>{{ icon('award', 28) }}<strong>Achievement System</strong><span>XP, level, lencana, bintang</span></div>
+  </div>
+</section>
+
+<section class="section" id="how">
+  <div class="section-head"><div><span class="eyebrow">How to play</span><h2>Tujuh langkah menjadi SCARLINE Champion</h2></div></div>
+  <div class="steps">
+    <div><b>1</b>Buat akun SCARLINE</div>
+    <div><b>2</b>Login</div>
+    <div><b>3</b>Pelajari materi</div>
+    <div><b>4</b>Jelajahi wilayah koordinat</div>
+    <div><b>5</b>Selesaikan permainan</div>
+    <div><b>6</b>Kumpulkan XP</div>
+    <div><b>7</b>Selesaikan Final Challenge</div>
+  </div>
+  <div class="center" style="margin-top:34px">
+    <a class="btn btn-primary btn-lg" href="{{ url_for('pages.dashboard') if logged_in else url_for('auth.register') }}">{{ 'Ke Markas SCAR' if logged_in else 'Daftar Gratis Sekarang' }} {{ icon('arrow-right', 18) }}</a>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/plane.js') }}"></script>
+<script>
+(function () {
+  var p = new SC.Plane(document.getElementById('hero-plane'), { range: 6 });
+  var lines = [{ m: 2, c: 1 }, { m: -0.5, c: 3, cls: 'teal' }, { m: 0.5, c: -2, cls: 'navy' }];
+  var i = 0;
+  function step() {
+    if (i >= lines.length) { i = 0; p.clear(); }
+    var l = lines[i++];
+    p.addLine({ m: l.m, c: l.c, cls: (l.cls || '') + ' thick', animate: true });
+    p.addPoint({ x: 0, y: l.c });
+    p.render();
+  }
+  step();
+  setInterval(step, 2400);
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}Straight Line Adventure Map{% endblock %}
+{% set pos = [(9,76),(23,40),(38,18),(47,62),(62,36),(75,72),(88,44),(91,12)] %}
+{% block content %}
+<div class="section-head">
+  <div>
+    <span class="eyebrow">Pusat navigasi pembelajaran</span>
+    <h1>STRAIGHT LINE ADVENTURE MAP</h1>
+    <p class="muted">Selesaikan setiap wilayah untuk membuka wilayah berikutnya. Wilayah yang sudah terbuka boleh dijelajahi ulang kapan saja.</p>
+  </div>
+  {{ bubble('Wilayah berwarna oranye adalah tujuan berikutnya. Ayo berangkat!', 'explain', 70) }}
+</div>
+
+{% set ns = namespace(current=None, walked=0) %}
+{% for l in lessons %}
+  {% set unlocked = loop.first or lessons[loop.index0 - 1].slug in summary.done %}
+  {% if unlocked and l.slug not in summary.done and ns.current is none %}{% set ns.current = loop.index0 %}{% endif %}
+  {% if l.slug in summary.done %}{% set ns.walked = loop.index %}{% endif %}
+{% endfor %}
+{% if ns.current is none %}{% set ns.current = 7 %}{% endif %}
+
+<div class="world" role="list" aria-label="Wilayah SCARLINE WORLD">
+  <svg class="trail" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M{% for p in pos %}{{ p[0] }} {{ p[1] }}{% if not loop.last %} L{% endif %}{% endfor %}" vector-effect="non-scaling-stroke"/>
+    {% if ns.walked > 0 %}
+    <path class="walked" d="M{% for p in pos[:ns.walked + 1] %}{{ p[0] }} {{ p[1] }}{% if not loop.last %} L{% endif %}{% endfor %}" vector-effect="non-scaling-stroke"/>
+    {% endif %}
+  </svg>
+
+  {% for l in lessons %}
+    {% set done = l.slug in summary.done %}
+    {% set unlocked = loop.first or lessons[loop.index0 - 1].slug in summary.done %}
+    {% set state = 'done' if done else ('current' if loop.index0 == ns.current else ('open' if unlocked else 'locked')) %}
+    {% if unlocked %}
+    <a role="listitem" class="region {{ state }}" style="left:{{ pos[loop.index0][0] }}%;top:{{ pos[loop.index0][1] }}%" href="{{ url_for('pages.mission', slug=l.slug) }}" aria-label="Mission {{ l.no }}: {{ l.region }} — {{ 'selesai' if done else 'terbuka' }}">
+    {% else %}
+    <div role="listitem" class="region locked" style="left:{{ pos[loop.index0][0] }}%;top:{{ pos[loop.index0][1] }}%" aria-label="Mission {{ l.no }}: {{ l.region }} — terkunci" title="Selesaikan Mission {{ '%02d'|format(l.no - 1) }} untuk membuka">
+    {% endif %}
+      <span class="disc"><span class="no">M{{ '%02d'|format(l.no) }}</span>{{ icon(l.icon if unlocked else 'lock', 34) }}{% if done %}<span class="flag">{{ icon('check', 16) }}</span>{% endif %}</span>
+      <span class="name">{{ l.region }}</span>
+      <span class="topic">{{ l.title }}</span>
+    {% if unlocked %}</a>{% else %}</div>{% endif %}
+  {% endfor %}
+
+  {% set fin = summary.earned.get('scarline-champion') %}
+  {% if summary.final_unlocked %}
+  <a role="listitem" class="region final {{ 'done' if fin else 'current' }}" style="left:{{ pos[7][0] }}%;top:{{ pos[7][1] }}%" href="{{ url_for('pages.final') }}">
+  {% else %}
+  <div role="listitem" class="region final locked" style="left:{{ pos[7][0] }}%;top:{{ pos[7][1] }}%" title="Selesaikan ketujuh misi untuk membuka">
+  {% endif %}
+    <span class="disc"><span class="no">FINAL</span>{{ icon('trophy' if summary.final_unlocked else 'lock', 38) }}{% if fin %}<span class="flag">{{ icon('star', 16) }}</span>{% endif %}</span>
+    <span class="name">Final Mission</span>
+    <span class="topic">Final Line Challenge</span>
+  {% if summary.final_unlocked %}</a>{% else %}</div>{% endif %}
+
+  {% if ns.current < 7 %}
+  <div class="world-scar" style="left:{{ pos[ns.current][0] + 5 }}%;top:{{ pos[ns.current][1] - 6 }}%">{{ scar('hint', 58) }}</div>
+  {% endif %}
+  <svg class="compass-rose" viewBox="0 0 100 100" aria-hidden="true">
+    <circle cx="50" cy="50" r="44" fill="#FFFDF7" stroke="#25334A" stroke-width="4"/>
+    <path d="M50 10 L58 50 L50 90 L42 50Z" fill="#C87945" stroke="#25334A" stroke-width="3"/>
+    <path d="M10 50 L50 42 L90 50 L50 58Z" fill="#648B83" stroke="#25334A" stroke-width="3"/>
+    <text x="50" y="26" text-anchor="middle" font-family="Fraunces" font-weight="900" font-size="14" fill="#25334A">Y</text>
+    <text x="80" y="55" text-anchor="middle" font-family="Fraunces" font-weight="900" font-size="14" fill="#25334A">X</text>
+  </svg>
+</div>
+<div class="map-legend">
+  <span><i style="background:var(--teal)"></i> Selesai</span>
+  <span><i style="background:var(--orange)"></i> Tujuan berikutnya</span>
+  <span><i style="background:var(--paper)"></i> Terbuka</span>
+  <span><i style="background:#D9CDB8"></i> Terkunci</span>
+  <span class="spacer"></span>
+  <span>Progres: <b>&nbsp;{{ summary.done|length }}/7 misi ({{ summary.percent }}%)</b></span>
+</div>
+{% endblock %}

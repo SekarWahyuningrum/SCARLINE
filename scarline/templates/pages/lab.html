@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% block title %}Coordinate Laboratory{% endblock %}
+{% block content %}
+<div class="section-head">
+  <div>
+    <span class="eyebrow">Laboratorium digital</span>
+    <h1>SCARLINE COORDINATE LABORATORY</h1>
+    <p class="muted">Bereksperimen bebas: tambah dan geser titik, ubah gradien, ketik persamaan, dan biarkan kalkulator menunjukkan langkah penyelesaiannya.</p>
+  </div>
+  {{ bubble('Di lab ini tidak ada jawaban salah — semua percobaan membuatmu makin paham!', 'explain', 70, id='lab-scar') }}
+</div>
+
+<div class="lab-tabs" role="tablist" aria-label="Alat laboratorium">
+  <button role="tab" aria-selected="true" aria-controls="tab-plane" id="t-plane">{{ icon('lab', 18) }} Bidang Kartesius</button>
+  <button role="tab" aria-selected="false" aria-controls="tab-gradient" id="t-gradient">{{ icon('mountain', 18) }} Gradient Simulator</button>
+  <button role="tab" aria-selected="false" aria-controls="tab-eq" id="t-eq">{{ icon('factory', 18) }} Equation to Graph</button>
+  <button role="tab" aria-selected="false" aria-controls="tab-two" id="t-two">{{ icon('ruler', 18) }} Two Points to Line</button>
+  <button role="tab" aria-selected="false" aria-controls="tab-calc" id="t-calc">{{ icon('calc', 18) }} Equation Calculator</button>
+</div>
+
+<section id="tab-plane" role="tabpanel" aria-labelledby="t-plane" class="lab-grid">
+  <div><div id="lab-plane"></div></div>
+  <div class="stack">
+    <div class="sheet">
+      <h3>Interactive Cartesian Plane</h3>
+      <div class="tool-row" role="group" aria-label="Alat">
+        <button type="button" class="btn btn-sm on" data-tool="add">＋ Tambah titik</button>
+        <button type="button" class="btn btn-sm" data-tool="move">✥ Geser</button>
+        <button type="button" class="btn btn-sm" data-tool="connect">⟋ Hubungkan 2 titik</button>
+        <button type="button" class="btn btn-sm" data-tool="delete">✕ Hapus</button>
+      </div>
+      <p class="small muted" id="tool-help">Klik di bidang untuk menambah titik (menempel ke grid).</p>
+      <label class="row small" style="gap:6px"><input type="checkbox" id="snap-half"> Snap setengah satuan (0,5)</label>
+    </div>
+    <div class="sheet">
+      <h3>Titik terpilih</h3>
+      <dl class="readout" id="sel-info"><dt>Koordinat</dt><dd>—</dd></dl>
+    </div>
+    <div class="sheet">
+      <div class="row between"><h3 style="margin:0">Daftar titik</h3><button class="btn btn-sm btn-ghost" type="button" id="clear-all">Bersihkan</button></div>
+      <ul class="point-list" id="point-list" style="margin-top:10px"></ul>
+      <h3 style="margin-top:14px">Garis</h3>
+      <ul class="point-list" id="line-list"></ul>
+    </div>
+  </div>
+</section>
+
+<section id="tab-gradient" role="tabpanel" aria-labelledby="t-gradient" class="lab-grid hidden">
+  <div><div id="grad-plane"></div></div>
+  <div class="stack">
+    <div class="sheet">
+      <h3>GRADIENT SIMULATOR</h3>
+      <div class="eq-display" id="grad-eq">y = x</div>
+      <div class="slider-row"><span>m</span><input type="range" id="grad-m" min="-6" max="6" step="0.25" value="1" aria-label="Gradien"><output id="grad-out">1</output></div>
+      <div class="preset-row">
+        <button class="btn btn-sm" type="button" data-grad="2">Positif</button>
+        <button class="btn btn-sm" type="button" data-grad="-1.5">Negatif</button>
+        <button class="btn btn-sm" type="button" data-grad="0">Nol</button>
+        <button class="btn btn-sm" type="button" data-grad="v">Tidak terdefinisi</button>
+      </div>
+    </div>
+    <div class="index-card"><dl class="readout" id="grad-info"></dl><p id="grad-explain" style="margin:10px 0 0"></p></div>
+  </div>
+</section>
+
+<section id="tab-eq" role="tabpanel" aria-labelledby="t-eq" class="lab-grid hidden">
+  <div><div id="eq-plane"></div></div>
+  <div class="stack">
+    <div class="sheet">
+      <h3>EQUATION TO GRAPH SIMULATOR</h3>
+      <div class="line-input" style="justify-content:center;margin-bottom:10px">y = <input class="num-input" id="eq-m" value="2" aria-label="m" inputmode="decimal"> x + <input class="num-input" id="eq-c" value="3" aria-label="c" inputmode="decimal"></div>
+      <p class="small muted center">Ketik angka bulat, desimal, atau pecahan (mis. -1/2).</p>
+      <div class="slider-row"><span>m</span><input type="range" id="eq-ms" min="-5" max="5" step="0.5" value="2" aria-label="Slider m"><output id="eq-mo">2</output></div>
+      <div class="slider-row"><span>c</span><input type="range" id="eq-cs" min="-8" max="8" step="1" value="3" aria-label="Slider c"><output id="eq-co">3</output></div>
+      <p class="small" id="eq-error" style="color:var(--red);font-weight:700"></p>
+    </div>
+    <div class="index-card"><dl class="readout" id="eq-info"></dl><p id="eq-change" style="margin:10px 0 0;font-weight:700"></p></div>
+  </div>
+</section>
+
+<section id="tab-two" role="tabpanel" aria-labelledby="t-two" class="lab-grid hidden">
+  <div><div id="two-plane"></div><p class="small muted center">Tip: kamu juga bisa mengeklik bidang untuk mengisi titik A lalu B.</p></div>
+  <div class="stack">
+    <form class="sheet" id="two-form" novalidate>
+      <h3>TWO POINTS TO LINE</h3>
+      <div class="calc-inputs">
+        <span>A(</span><label>x₁ <input class="num-input" name="x1" value="1"></label><label>y₁ <input class="num-input" name="y1" value="2"></label><span>)</span>
+      </div>
+      <div class="calc-inputs">
+        <span>B(</span><label>x₂ <input class="num-input" name="x2" value="3"></label><label>y₂ <input class="num-input" name="y2" value="6"></label><span>)</span>
+      </div>
+      <button class="btn btn-primary" type="submit">{{ icon('ruler', 16) }} Tentukan Persamaan</button>
+    </form>
+    <div class="notebook" id="two-result"><p class="muted">Hasil dan langkah penyelesaian akan muncul di sini.</p></div>
+  </div>
+</section>
+
+<section id="tab-calc" role="tabpanel" aria-labelledby="t-calc" class="lab-grid hidden">
+  <div><div id="calc-plane"></div></div>
+  <div class="stack">
+    <form class="sheet" id="calc-form" novalidate>
+      <h3>EQUATION CALCULATOR</h3>
+      <div class="field">
+        <label for="calc-method">Metode</label>
+        <select id="calc-method" name="method">
+          <option value="point-slope">Diketahui gradien dan satu titik</option>
+          <option value="two-points">Diketahui dua titik</option>
+          <option value="slope-intercept">Diketahui gradien dan titik potong sumbu Y</option>
+          <option value="gradient">Menentukan gradien dari dua titik</option>
+          <option value="origin">Garis melalui titik pusat O(0, 0)</option>
+        </select>
+      </div>
+      <div class="formula-card" style="margin-bottom:12px"><div class="label">Rumus</div><div class="expr" id="calc-formula">y − y₁ = m(x − x₁)</div></div>
+      <div class="calc-inputs" id="calc-inputs"></div>
+      <button class="btn btn-primary" type="submit">{{ icon('calc', 16) }} Hitung</button>
+      <p class="small" id="calc-error" style="color:var(--red);font-weight:700;margin:10px 0 0" aria-live="polite"></p>
+    </form>
+    <div class="notebook" id="calc-result"><p class="muted">Isi data lalu tekan Hitung.</p></div>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/plane.js') }}"></script>
+<script src="{{ url_for('static', filename='js/lab.js') }}"></script>
+{% endblock %}

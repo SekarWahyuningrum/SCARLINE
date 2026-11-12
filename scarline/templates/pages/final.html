@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Final Line Challenge{% endblock %}
+{% block content %}
+<div class="quiz-shell" style="max-width:980px">
+  <span class="eyebrow">Final Mission · Evaluasi akhir</span>
+  <h1>FINAL LINE CHALLENGE</h1>
+
+  <div id="final-setup">
+    <div class="grid cols-2" style="align-items:start">
+      <div class="paper tape">
+        <h3>Cakupan materi</h3>
+        <ul style="margin:0;padding-left:20px">{% for k, v in topics.items() %}<li>{{ v }}</li>{% endfor %}</ul>
+        <p class="small muted" style="margin:12px 0 0">Tipe soal: pilihan ganda, isian, perhitungan, identifikasi grafik, menentukan titik, dan soal cerita. Kunci jawaban tidak ditampilkan selama evaluasi. Nilai lulus: <b>{{ pass_score }}</b>.</p>
+      </div>
+      <div class="sheet">
+        {% if summary.final_unlocked %}
+          <h3>Atur evaluasi</h3>
+          <div class="field">
+            <label for="final-count">Jumlah soal</label>
+            <select id="final-count">{% for n in options %}<option value="{{ n }}" {{ 'selected' if n == 15 }}>{{ n }} soal</option>{% endfor %}</select>
+          </div>
+          <label class="row" style="gap:8px;font-weight:700;margin-bottom:16px"><input type="checkbox" id="final-timer"> Gunakan timer (1,5 menit per soal)</label>
+          <button type="button" class="btn btn-primary btn-lg btn-block" id="final-start">{{ icon('trophy', 18) }} Mulai Final Challenge</button>
+          <p class="small" id="final-error" style="color:var(--red);font-weight:700"></p>
+        {% else %}
+          {{ bubble('Final Line Challenge terbuka setelah ketujuh misi selesai. Kamu sudah menyelesaikan ' ~ summary.done|length ~ ' dari 7 misi!', 'hint', 80) }}
+          <a class="btn btn-primary" style="margin-top:14px" href="{{ url_for('pages.adventure_map') }}">{{ icon('map', 16) }} Lanjutkan misi</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <section style="margin-top:26px">
+      <h3>Riwayat evaluasi</h3>
+      {% if history %}
+        <div class="table-wrap"><table class="data">
+          <thead><tr><th>Tanggal</th><th>Nilai</th><th>Benar</th><th>Bintang</th><th>Durasi</th><th>XP</th><th>Status</th></tr></thead>
+          <tbody>{% for h in history %}<tr><td>{{ h.created_at|datefmt }}</td><td><b>{{ h.score }}</b></td><td>{{ h.correct }}/{{ h.total }}</td><td>{{ '★' * h.stars }}{{ '☆' * (3 - h.stars) }}</td><td>{{ (h.duration_seconds // 60) }}m {{ h.duration_seconds % 60 }}d</td><td>{{ h.xp_awarded }}</td><td><span class="status {{ 'lulus' if h.score >= pass_score else 'belum-lulus' }}">{{ 'Lulus' if h.score >= pass_score else 'Belum lulus' }}</span></td></tr>{% endfor %}</tbody>
+        </table></div>
+      {% else %}<p class="muted">Belum ada riwayat evaluasi.</p>{% endif %}
+    </section>
+  </div>
+
+  <div id="final-run" class="hidden"></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/plane.js') }}"></script>
+<script src="{{ url_for('static', filename='js/quiz.js') }}"></script>
+<script src="{{ url_for('static', filename='js/final.js') }}"></script>
+{% endblock %}

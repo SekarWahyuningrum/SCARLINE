@@ -1,0 +1,42 @@
+{% extends 'auth/_layout.html' %}
+{% set side_mood = 'think' %}
+{% block title %}Atur Password Baru{% endblock %}
+{% block side_text %}Buat password baru yang kuat — kombinasi huruf besar, huruf kecil, dan angka.{% endblock %}
+{% block form %}
+<span class="eyebrow">Reset password</span>
+<h1>Atur Password Baru</h1>
+<div id="reset-error" class="notice error hidden" role="alert"></div>
+<div id="reset-missing" class="notice error hidden">Tautan reset tidak valid atau sudah kedaluwarsa. <a href="{{ url_for('auth.forgot_password') }}">Minta tautan baru</a>.</div>
+<form id="reset-form" novalidate>
+  {{ pw_field('password', 'password', 'Password baru', 'new-password', None, 'Min. 8 karakter, huruf besar, huruf kecil, dan angka.') }}
+  {{ pw_field('confirm_password', 'confirm_password', 'Ulangi password baru', 'new-password') }}
+  <button type="submit" class="btn btn-primary btn-block btn-lg">Simpan password baru</button>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  var params = new URLSearchParams(location.hash.replace(/^#/, ''));
+  var token = params.get('access_token');
+  var errBox = document.getElementById('reset-error');
+  if (params.get('error_description')) { errBox.textContent = params.get('error_description').replace(/\+/g, ' '); errBox.classList.remove('hidden'); }
+  if (!token) { document.getElementById('reset-missing').classList.remove('hidden'); document.getElementById('reset-form').classList.add('hidden'); return; }
+  history.replaceState(null, '', location.pathname);
+  document.getElementById('reset-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var btn = this.querySelector('button[type=submit]');
+    SC.busy(btn, true, 'Menyimpan...');
+    SC.api('{{ url_for("auth.reset_password_submit") }}', {
+      access_token: token,
+      password: document.getElementById('password').value,
+      confirm_password: document.getElementById('confirm_password').value
+    }).then(function (r) {
+      if (r.ok) { location.href = r.data.redirect; return; }
+      SC.busy(btn, false);
+      errBox.textContent = r.data.error || 'Gagal menyimpan password.';
+      errBox.classList.remove('hidden');
+    });
+  });
+})();
+</script>
+{% endblock %}

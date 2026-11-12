@@ -1,0 +1,31 @@
+{% extends 'auth/_layout.html' %}
+{% set side_mood = 'welcome' %}
+{% block title %}Masuk{% endblock %}
+{% block side_text %}Selamat datang kembali! Wilayah koordinat sudah menunggumu. Progresmu tersimpan aman.{% endblock %}
+{% block form %}
+<span class="eyebrow">Login</span>
+<h1>WELCOME BACK, LINE EXPLORER!</h1>
+<p class="muted">Masuk untuk melanjutkan misi, game, dan evaluasimu.</p>
+<div id="confirm-note" class="notice ok hidden">Email kamu sudah terkonfirmasi. Silakan masuk!</div>
+{% if error %}<div class="notice error" role="alert">{{ error }}</div>{% endif %}
+<form method="post" action="{{ url_for('auth.login', next=next) if next else url_for('auth.login') }}" data-loading="Masuk..." novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="next" value="{{ next }}">
+  <div class="field">
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" autocomplete="email" value="{{ email }}" required placeholder="nama@email.com">
+  </div>
+  {{ pw_field('password', 'password', 'Password', 'current-password') }}
+  <div class="row between" style="margin:-4px 0 18px">
+    <a href="{{ url_for('auth.forgot_password') }}" class="small">Lupa password?</a>
+  </div>
+  <button type="submit" class="btn btn-primary btn-block btn-lg">{{ icon('play', 18) }} MASUK</button>
+</form>
+<p class="center" style="margin-top:20px">Belum punya akun? <a href="{{ url_for('auth.register') }}"><b>Daftar sebagai Line Explorer</b></a></p>
+{% endblock %}
+{% block scripts %}
+<script>
+  if (/type=signup|confirmed=1/.test(location.hash + location.search)) document.getElementById('confirm-note').classList.remove('hidden');
+  if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+</script>
+{% endblock %}

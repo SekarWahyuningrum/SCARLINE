@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}SCAR's Playground{% endblock %}
+{% block content %}
+<div class="section-head">
+  <div>
+    <span class="eyebrow">Belajar sambil bermain</span>
+    <h1>SCAR'S PLAYGROUND</h1>
+    <p class="muted">Lima permainan dengan mekanisme berbeda: klik titik, atur kemiringan, rakit persamaan, susun potongan rumus, dan petualangan menyelamatkan SCAR. Semua skor dihitung oleh server.</p>
+  </div>
+  {{ bubble('Pilih game favoritmu! Mainkan kelima-limanya untuk lencana Playground Explorer.', 'happy', 70) }}
+</div>
+<div class="game-cards">
+  {% for g in games %}
+    <a class="game-card" href="{{ url_for('pages.game', slug=g.slug) }}">
+      <span class="gnum">0{{ loop.index }}</span>
+      <span class="gic">{{ icon(g.icon, 30) }}</span>
+      <span class="mech">{{ g.mechanic }}</span>
+      <h3>{{ g.title }}</h3>
+      <p style="margin:0;font-weight:700">{{ g.tagline }}</p>
+      <p class="small muted" style="margin:0">{{ g.goal }}</p>
+      <div class="row between" style="margin-top:auto">
+        {% if best.get(g.slug) is not none %}<span class="chip chip-teal">Terbaik {{ best[g.slug]|round|int }}%</span>{% else %}<span class="chip">Belum dimainkan</span>{% endif %}
+        <span class="btn btn-sm btn-primary">Main {{ icon('play', 14) }}</span>
+      </div>
+    </a>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="error-page">
+  {{ scar('think', 170) }}
+  <div class="code">{{ code }}</div>
+  <h1 style="font-size:2rem">{{ title }}</h1>
+  <p class="muted">{{ message }}</p>
+  <div class="row" style="justify-content:center">
+    <a class="btn btn-primary" href="{{ url_for('pages.dashboard') }}">Ke Markas</a>
+    <a class="btn" href="{{ url_for('pages.landing') }}">Beranda</a>
+  </div>
+</div>
+{% endblock %}

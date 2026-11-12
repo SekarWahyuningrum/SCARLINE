@@ -1,0 +1,14 @@
+{# Komponen formulir #}
+{% macro pw_field(id, name, label, autocomplete, err=None, help=None) -%}
+<div class="field {{ 'invalid' if err }}">
+  <label for="{{ id }}">{{ label }}</label>
+  <div class="pw-wrap">
+    <input id="{{ id }}" name="{{ name }}" type="password" autocomplete="{{ autocomplete }}" required {% if err %}aria-invalid="true" aria-describedby="{{ id }}-err"{% endif %}>
+    <button class="pw-toggle" type="button" data-pw-toggle="{{ id }}" aria-label="Tampilkan password">
+      <span class="eye">{{ icon('eye', 20) }}</span><span class="eye-off hidden">{{ icon('eye-off', 20) }}</span>
+    </button>
+  </div>
+  {% if help %}<span class="help">{{ help }}</span>{% endif %}
+  {% if err %}<span class="err" id="{{ id }}-err">{{ err }}</span>{% endif %}
+</div>
+{%- endmacro %}

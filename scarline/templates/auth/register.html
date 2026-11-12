@@ -1,0 +1,51 @@
+{% extends 'auth/_layout.html' %}
+{% set side_mood = 'explain' %}
+{% block title %}Buat Akun{% endblock %}
+{% block side_text %}Daftarkan dirimu sebagai Line Explorer! Setiap misi, XP, dan lencana akan tercatat di akunmu.{% endblock %}
+{% macro f(name, label, type='text', ac='', ph='', help=None) -%}
+<div class="field {{ 'invalid' if errors.get(name) }}">
+  <label for="{{ name }}">{{ label }}</label>
+  <input id="{{ name }}" name="{{ name }}" type="{{ type }}" autocomplete="{{ ac }}" value="{{ values.get(name, '') }}" placeholder="{{ ph }}" required {% if errors.get(name) %}aria-invalid="true" aria-describedby="{{ name }}-err"{% endif %}>
+  {% if help %}<span class="help">{{ help }}</span>{% endif %}
+  {% if errors.get(name) %}<span class="err" id="{{ name }}-err">{{ errors[name] }}</span>{% endif %}
+</div>
+{%- endmacro %}
+{% block form %}
+<span class="eyebrow">Registrasi</span>
+<h1>Buat Akun SCARLINE</h1>
+<p class="muted">Semua kolom wajib diisi.</p>
+<form method="post" action="{{ url_for('auth.register') }}" data-loading="Membuat akun..." novalidate id="register-form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {{ f('full_name', 'Nama lengkap', ac='name', ph='Contoh: Rina Kartika') }}
+  <div class="form-row">
+    {{ f('username', 'Username', ac='username', ph='rina_garis', help='3–20 karakter: huruf kecil, angka, _') }}
+    {{ f('class_name', 'Kelas', ph='VIII-A') }}
+  </div>
+  {{ f('email', 'Email', type='email', ac='email', ph='nama@email.com') }}
+  <div class="form-row">
+    {{ pw_field('password', 'password', 'Password', 'new-password', errors.get('password'), 'Min. 8 karakter, huruf besar, huruf kecil, dan angka.') }}
+    {{ pw_field('confirm_password', 'confirm_password', 'Konfirmasi password', 'new-password', errors.get('confirm_password')) }}
+  </div>
+  <div class="pw-meter" aria-hidden="true" id="pw-meter"><i></i><i></i><i></i><i></i></div>
+  <p class="small muted" id="pw-hint" aria-live="polite" style="margin:6px 0 16px">Kekuatan password akan muncul di sini.</p>
+  <button type="submit" class="btn btn-primary btn-block btn-lg">{{ icon('flag', 18) }} DAFTAR & MULAI</button>
+</form>
+<p class="center" style="margin-top:20px">Sudah punya akun? <a href="{{ url_for('auth.login') }}"><b>Masuk di sini</b></a></p>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  var pw = document.getElementById('password'), meter = document.querySelectorAll('#pw-meter i'), hint = document.getElementById('pw-hint');
+  var username = document.getElementById('username');
+  username.addEventListener('input', function () { username.value = username.value.toLowerCase().replace(/\s/g, ''); });
+  pw.addEventListener('input', function () {
+    var v = pw.value, checks = [v.length >= 8, /[a-z]/.test(v), /[A-Z]/.test(v), /\d/.test(v)];
+    var score = checks.filter(Boolean).length;
+    meter.forEach(function (m, i) { m.classList.toggle('on', i < score); });
+    var miss = [];
+    if (!checks[0]) miss.push('8 karakter'); if (!checks[1]) miss.push('huruf kecil'); if (!checks[2]) miss.push('huruf besar'); if (!checks[3]) miss.push('angka');
+    hint.textContent = miss.length ? 'Masih perlu: ' + miss.join(', ') + '.' : 'Mantap, password sudah kuat!';
+  });
+})();
+</script>
+{% endblock %}

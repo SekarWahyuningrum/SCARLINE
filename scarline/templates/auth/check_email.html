@@ -1,0 +1,11 @@
+{% extends 'auth/_layout.html' %}
+{% set side_mood = 'happy' %}
+{% block title %}Cek Email{% endblock %}
+{% block side_text %}Hampir selesai! Satu langkah lagi untuk membuka SCARLINE WORLD.{% endblock %}
+{% block form %}
+<span class="eyebrow">Akun dibuat</span>
+<h1>Cek Kotak Masuk Emailmu</h1>
+<div class="notice ok">Kami mengirim tautan konfirmasi ke <b>{{ email }}</b>. Klik tautan tersebut, lalu kembali ke sini untuk masuk.</div>
+<p class="muted">Tidak menemukan emailnya? Periksa folder spam/promosi, atau tunggu beberapa menit.</p>
+<a class="btn btn-primary btn-block btn-lg" href="{{ url_for('auth.login') }}">Ke halaman masuk {{ icon('arrow-right', 18) }}</a>
+{% endblock %}

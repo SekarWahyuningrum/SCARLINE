@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}Profil{% endblock %}
+{% set lv = summary.level %}
+{% block content %}
+<span class="eyebrow">Kartu identitas penjelajah</span>
+<h1>Profil Line Explorer</h1>
+<section class="id-card">
+  <div class="avatar">{{ scar('happy', 120, label='Avatar SCAR') }}</div>
+  <div>
+    <h2 style="margin:0">{{ profile.full_name }}</h2>
+    <p style="margin:4px 0 0"><span class="chip chip-orange">Lv {{ lv.level }} · {{ lv.name }}</span> <span class="chip">{{ lv.xp }} XP</span></p>
+    <dl>
+      <dt>Username</dt><dd>@{{ profile.username }}</dd>
+      <dt>Email</dt><dd>{{ profile.email }}</dd>
+      <dt>Kelas</dt><dd>{{ profile.class_name }}</dd>
+      <dt>Terdaftar</dt><dd>{{ profile.created_at|datefmt(false) }}</dd>
+    </dl>
+  </div>
+</section>
+
+<section class="instrument" style="margin-top:22px">
+  <div><span>Misi selesai</span><b>{{ summary.done|length }}/7</b></div>
+  <div><span>Permainan</span><b>{{ summary.stats.games_played or 0 }}</b></div>
+  <div><span>Evaluasi akhir</span><b>{{ finals_count }}</b></div>
+  <div><span>Lencana</span><b>{{ summary.earned|length }}</b></div>
+</section>
+
+<div class="grid cols-2" style="margin-top:22px">
+  <section class="sheet">
+    <h3>Lencana yang diperoleh</h3>
+    {% if summary.earned %}
+      <div class="badge-row">{% for a in summary.achievements if a.earned %}<span class="medal" title="{{ a.title }}">{{ icon(a.icon, 24) }}</span>{% endfor %}</div>
+      <p class="small muted" style="margin:10px 0 0">{{ summary.achievements|selectattr('earned')|map(attribute='title')|join(', ') }}</p>
+    {% else %}<p class="muted">Belum ada lencana. Selesaikan Mission 01 untuk lencana pertama!</p>{% endif %}
+  </section>
+  <form class="paper" method="post" action="{{ url_for('pages.profile') }}" data-loading="Menyimpan..." novalidate>
+    <h3>Ubah data profil</h3>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field {{ 'invalid' if errors.full_name }}"><label for="full_name">Nama lengkap</label><input id="full_name" name="full_name" value="{{ profile.full_name }}" required>{% if errors.full_name %}<span class="err">{{ errors.full_name }}</span>{% endif %}</div>
+    <div class="field {{ 'invalid' if errors.class_name }}"><label for="class_name">Kelas</label><input id="class_name" name="class_name" value="{{ profile.class_name }}" required>{% if errors.class_name %}<span class="err">{{ errors.class_name }}</span>{% endif %}</div>
+    <p class="small muted">Username dan email tidak dapat diubah.</p>
+    <button class="btn btn-primary" type="submit">Simpan</button>
+  </form>
+</div>
+
+<div class="row" style="margin-top:24px">
+  <a class="btn" href="{{ url_for('pages.history') }}">{{ icon('history', 16) }} Riwayat belajar</a>
+  <a class="btn" href="{{ url_for('pages.achievements') }}">{{ icon('award', 16) }} Pencapaian</a>
+  <form method="post" action="{{ url_for('auth.logout') }}" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-navy" type="submit">{{ icon('logout', 16) }} Keluar</button></form>
+</div>
+{% endblock %}

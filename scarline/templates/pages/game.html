@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}{{ info.title }}{% endblock %}
+{% block content %}
+<a href="{{ url_for('pages.playground') }}" class="small">{{ icon('arrow-left', 14) }} SCAR's Playground</a>
+<div class="section-head" style="margin-top:10px">
+  <div><span class="eyebrow">{{ info.tagline }}</span><h1>{{ info.title }}</h1></div>
+</div>
+
+<div class="game-stage" id="stage">
+  <div class="intro-card" id="intro">
+    {{ scar('explain', 150, cls='idle-bob') }}
+    <div>
+      <h2 style="font-size:1.5rem">Petunjuk Permainan</h2>
+      <p><b>Cerita:</b> {{ info.story }}</p>
+      <p><b>Tujuan belajar:</b> {{ info.goal }}</p>
+      <h3>Aturan</h3>
+      <ol class="rules">{% for r in info.rules %}<li>{{ r }}</li>{% endfor %}</ol>
+      <h3>Pilih tingkat kesulitan</h3>
+      <div class="diff-pick" role="radiogroup" aria-label="Tingkat kesulitan">
+        {% for key, d in difficulties.items() %}
+          <label><input type="radio" name="difficulty" value="{{ key }}" {{ 'checked' if loop.first }}><span>{{ d.label }} <small>{{ info.levels[key] }} · XP ×{{ d.mult }}</small></span></label>
+        {% endfor %}
+      </div>
+      <button class="btn btn-primary btn-lg" type="button" id="start-game">{{ icon('play', 18) }} Mulai Bermain</button>
+      <p class="small" id="start-error" style="color:var(--red);font-weight:700"></p>
+    </div>
+  </div>
+  <div id="play" class="hidden"></div>
+</div>
+
+<section class="sheet" style="margin-top:24px">
+  <h3>Riwayat permainanmu</h3>
+  {% if history %}
+    <ul class="history-mini">
+      {% for h in history %}<li><span>{{ h.created_at|datefmt }} · {{ difficulties[h.difficulty].label if h.difficulty in difficulties else h.difficulty }}</span><span class="mono">{{ h.score }}/{{ h.max_score }} poin · {{ h.percent }}% · ★{{ h.stars }}{% if h.xp_awarded %} · +{{ h.xp_awarded }} XP{% endif %}</span></li>{% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted" style="margin:0">Belum ada. Hasil permainan akan tersimpan otomatis di akunmu.</p>
+  {% endif %}
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/plane.js') }}"></script>
+<script src="{{ url_for('static', filename='js/quiz.js') }}"></script>
+<script src="{{ url_for('static', filename='js/games/shell.js') }}"></script>
+<script src="{{ url_for('static', filename='js/games/' + info.slug + '.js') }}"></script>
+<script>SC.startGameShell({{ info.slug|tojson }}, {{ info.title|tojson }});</script>
+{% endblock %}

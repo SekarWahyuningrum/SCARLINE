@@ -1,0 +1,83 @@
+{# SCAR — maskot SCARLINE. Satu desain, tujuh ekspresi lewat atribut data-mood:
+   welcome | explain | think | hint | happy | encourage | celebrate #}
+{% macro scar(mood='welcome', size=160, cls='', label='SCAR, maskot SCARLINE') -%}
+<svg class="scar {{ cls }}" data-mood="{{ mood }}" width="{{ size }}" height="{{ (size * 1.1)|round|int }}" viewBox="0 0 200 220" role="img" aria-label="{{ label }}">
+  <ellipse cx="100" cy="212" rx="56" ry="7" fill="#25334A" opacity=".12"/>
+  <!-- kaki -->
+  <ellipse cx="78" cy="198" rx="15" ry="8" fill="#25334A"/>
+  <ellipse cx="122" cy="198" rx="15" ry="8" fill="#25334A"/>
+  <!-- lengan kiri (sisi kiri gambar) -->
+  <g class="v v-welcome scar-wave"><path d="M44 140 C26 128 20 104 28 92" stroke="#25334A" stroke-width="9" stroke-linecap="round" fill="none"/><circle cx="28" cy="90" r="8" fill="#E8D8BD" stroke="#25334A" stroke-width="4"/></g>
+  <g class="v v-explain v-hint"><path d="M44 142 C28 140 18 128 14 116" stroke="#25334A" stroke-width="9" stroke-linecap="round" fill="none"/><circle cx="13" cy="113" r="7" fill="#E8D8BD" stroke="#25334A" stroke-width="4"/><path d="M8 106 L2 98" stroke="#25334A" stroke-width="4" stroke-linecap="round"/></g>
+  <g class="v v-think"><path d="M46 150 C40 140 52 130 66 156" stroke="#25334A" stroke-width="9" stroke-linecap="round" fill="none"/><circle cx="68" cy="160" r="7" fill="#E8D8BD" stroke="#25334A" stroke-width="4"/></g>
+  <g class="v v-encourage"><path d="M44 146 C30 146 22 136 22 124" stroke="#25334A" stroke-width="9" stroke-linecap="round" fill="none"/><rect x="14" y="110" width="16" height="16" rx="6" fill="#E8D8BD" stroke="#25334A" stroke-width="4"/><path d="M22 110 L22 100" stroke="#25334A" stroke-width="5" stroke-linecap="round"/></g>
+  <g class="v v-happy v-celebrate"><path d="M46 136 C30 118 26 92 34 72" stroke="#25334A" stroke-width="9" stroke-linecap="round" fill="none"/><circle cx="35" cy="69" r="8" fill="#E8D8BD" stroke="#25334A" stroke-width="4"/></g>
+  <!-- lengan kanan -->
+  <g class="v v-welcome v-explain v-think v-hint v-encourage v-happy">
+    <path d="M156 140 C170 146 176 156 174 166" stroke="#25334A" stroke-width="9" stroke-linecap="round" fill="none"/>
+    <g transform="rotate(8 176 160)">
+      <rect x="160" y="132" width="38" height="42" rx="4" fill="#FFFDF7" stroke="#25334A" stroke-width="3.5"/>
+      <rect x="171" y="127" width="16" height="8" rx="2" fill="#A58A70" stroke="#25334A" stroke-width="2.5"/>
+      <path d="M179 138 V170 M164 154 H194" stroke="#648B83" stroke-width="2"/>
+      <path d="M166 168 L192 140" stroke="#C87945" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="173" cy="160" r="2.4" fill="#25334A"/><circle cx="185" cy="147" r="2.4" fill="#25334A"/>
+    </g>
+    <circle cx="172" cy="166" r="7" fill="#E8D8BD" stroke="#25334A" stroke-width="4"/>
+  </g>
+  <g class="v v-celebrate"><path d="M154 136 C170 118 174 92 166 72" stroke="#25334A" stroke-width="9" stroke-linecap="round" fill="none"/><circle cx="165" cy="69" r="8" fill="#E8D8BD" stroke="#25334A" stroke-width="4"/></g>
+  <!-- badan: kertas grafik -->
+  <clipPath id="scarBodyClip"><ellipse cx="100" cy="134" rx="60" ry="62"/></clipPath>
+  <ellipse cx="100" cy="134" rx="60" ry="62" fill="#E8D8BD"/>
+  <g clip-path="url(#scarBodyClip)" stroke="#648B83" stroke-opacity=".28" stroke-width="1.4">
+    <path d="M52 70V200M64 70V200M76 70V200M88 70V200M100 70V200M112 70V200M124 70V200M136 70V200M148 70V200"/>
+    <path d="M38 84H162M38 96H162M38 108H162M38 120H162M38 132H162M38 144H162M38 156H162M38 168H162M38 180H162M38 192H162"/>
+  </g>
+  <ellipse cx="100" cy="134" rx="60" ry="62" fill="none" stroke="#25334A" stroke-width="5"/>
+  <ellipse cx="100" cy="166" rx="30" ry="22" fill="#FFFDF7" opacity=".55"/>
+  <!-- syal (scarf) -->
+  <path d="M46 160 Q100 184 154 160 L156 172 Q100 198 44 172 Z" fill="#648B83" stroke="#25334A" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M66 170 l4 9 M82 175 l3 9 M98 177 l1 9 M114 176 l-2 9 M130 172 l-3 9" stroke="#F4EBDD" stroke-width="3" stroke-linecap="round"/>
+  <path d="M126 178 L138 206 L124 204 L116 182 Z" fill="#648B83" stroke="#25334A" stroke-width="4" stroke-linejoin="round"/>
+  <!-- helm penjelajah -->
+  <path d="M50 82 C52 40 148 40 150 82 Z" fill="#C87945" stroke="#25334A" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M60 60 C80 50 120 50 140 60" stroke="#E6C878" stroke-width="3" fill="none" opacity=".8"/>
+  <rect x="50" y="72" width="100" height="10" fill="#25334A"/>
+  <ellipse cx="100" cy="84" rx="72" ry="9" fill="#C87945" stroke="#25334A" stroke-width="5"/>
+  <circle cx="100" cy="62" r="11" fill="#FFFDF7" stroke="#25334A" stroke-width="3"/>
+  <path d="M94 68 L106 56" stroke="#C87945" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="94" cy="68" r="2" fill="#25334A"/><circle cx="106" cy="56" r="2" fill="#25334A"/>
+  <!-- alis -->
+  <g class="v v-welcome v-explain v-happy" stroke="#25334A" stroke-width="4" stroke-linecap="round"><path d="M66 96 Q78 90 88 95"/><path d="M112 95 Q122 90 134 96"/></g>
+  <g class="v v-hint v-celebrate" stroke="#25334A" stroke-width="4" stroke-linecap="round"><path d="M66 92 Q78 84 88 90"/><path d="M112 90 Q122 84 134 92"/></g>
+  <g class="v v-think" stroke="#25334A" stroke-width="4" stroke-linecap="round"><path d="M66 97 Q78 95 88 97"/><path d="M112 92 Q122 86 134 90"/></g>
+  <g class="v v-encourage" stroke="#25334A" stroke-width="4" stroke-linecap="round"><path d="M66 94 Q78 96 88 99"/><path d="M112 99 Q122 96 134 94"/></g>
+  <!-- kacamata vintage -->
+  <g fill="#FFFDF7" stroke="#25334A" stroke-width="5"><circle cx="78" cy="118" r="19"/><circle cx="122" cy="118" r="19"/></g>
+  <path d="M97 116 Q100 112 103 116" stroke="#25334A" stroke-width="4" fill="none"/>
+  <path d="M59 116 L44 110 M141 116 L156 110" stroke="#25334A" stroke-width="4" stroke-linecap="round"/>
+  <!-- mata -->
+  <g class="v v-welcome v-explain v-hint v-encourage"><circle cx="79" cy="120" r="7.5" fill="#25334A"/><circle cx="123" cy="120" r="7.5" fill="#25334A"/><circle cx="82" cy="116.5" r="2.6" fill="#FFFDF7"/><circle cx="126" cy="116.5" r="2.6" fill="#FFFDF7"/></g>
+  <g class="v v-think"><circle cx="84" cy="112" r="7" fill="#25334A"/><circle cx="128" cy="112" r="7" fill="#25334A"/><circle cx="86" cy="109" r="2.4" fill="#FFFDF7"/><circle cx="130" cy="109" r="2.4" fill="#FFFDF7"/></g>
+  <g class="v v-happy v-celebrate" stroke="#25334A" stroke-width="5" stroke-linecap="round" fill="none"><path d="M69 122 Q78 110 87 122"/><path d="M113 122 Q122 110 131 122"/></g>
+  <!-- pipi -->
+  <circle cx="60" cy="144" r="8" fill="#C87945" opacity=".35"/><circle cx="140" cy="144" r="8" fill="#C87945" opacity=".35"/>
+  <!-- mulut -->
+  <path class="v v-welcome v-encourage" d="M88 146 Q100 158 112 146" stroke="#25334A" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+  <g class="v v-explain v-hint"><path d="M88 145 Q100 147 112 145 Q108 160 100 160 Q92 160 88 145 Z" fill="#25334A"/><path d="M94 155 Q100 151 106 155 Q100 159 94 155Z" fill="#C87945"/></g>
+  <ellipse class="v v-think" cx="104" cy="150" rx="5" ry="6" fill="#25334A"/>
+  <g class="v v-happy v-celebrate"><path d="M84 143 Q100 146 116 143 Q112 166 100 166 Q88 166 84 143 Z" fill="#25334A"/><path d="M91 157 Q100 152 109 157 Q100 164 91 157Z" fill="#C87945"/></g>
+  <!-- ekstra -->
+  <g class="v v-think scar-float"><circle cx="170" cy="44" r="16" fill="#FFFDF7" stroke="#25334A" stroke-width="3"/><text x="170" y="52" text-anchor="middle" font-family="Fraunces, serif" font-weight="700" font-size="22" fill="#C87945">?</text><circle cx="152" cy="68" r="4" fill="#FFFDF7" stroke="#25334A" stroke-width="2.5"/></g>
+  <g class="v v-hint scar-float"><path d="M164 26 a14 14 0 0 1 14 22 l-2 8 h-12 l-2 -8 a14 14 0 0 1 2 -22 z" fill="#E6C878" stroke="#25334A" stroke-width="3" stroke-linejoin="round"/><path d="M164 60 h12" stroke="#25334A" stroke-width="3" stroke-linecap="round"/><path d="M150 22 l-6 -6 M186 22 l6 -6 M170 10 v-7" stroke="#C87945" stroke-width="3" stroke-linecap="round"/></g>
+  <g class="v v-happy v-celebrate scar-twinkle" fill="#E6C878" stroke="#25334A" stroke-width="2"><path d="M22 40 l4 9 l9 4 l-9 4 l-4 9 l-4 -9 l-9 -4 l9 -4z"/><path d="M178 30 l3 7 l7 3 l-7 3 l-3 7 l-3 -7 l-7 -3 l7 -3z"/></g>
+  <g class="v v-celebrate scar-confetti"><rect x="40" y="18" width="7" height="12" fill="#C87945" transform="rotate(25 43 24)"/><rect x="150" y="10" width="7" height="12" fill="#648B83" transform="rotate(-30 153 16)"/><circle cx="120" cy="16" r="4" fill="#C87945"/><circle cx="66" cy="12" r="4" fill="#648B83"/><rect x="186" y="58" width="6" height="10" fill="#E6C878" transform="rotate(40 189 63)"/></g>
+  <g class="v v-encourage scar-float"><path d="M176 40 c-6 -10 -22 -4 -14 8 l14 14 l14 -14 c8 -12 -8 -18 -14 -8z" fill="#C87945" stroke="#25334A" stroke-width="3" stroke-linejoin="round"/></g>
+</svg>
+{%- endmacro %}
+
+{% macro bubble(text, mood='explain', size=96, cls='', id=None) -%}
+<div class="scar-say {{ cls }}" {% if id %}id="{{ id }}"{% endif %}>
+  {{ scar(mood, size) }}
+  <div class="bubble" data-scar-text>{{ text }}</div>
+</div>
+{%- endmacro %}

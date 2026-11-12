@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Pencapaian{% endblock %}
+{% set lv = summary.level %}
+{% block content %}
+<div class="section-head">
+  <div><span class="eyebrow">Koleksi pencapaian</span><h1>Lemari Lencana SCAR</h1>
+    <p class="muted">{{ summary.earned|length }} dari {{ all|length }} lencana diperoleh. Setiap lencana memberi bonus XP satu kali.</p></div>
+  <div class="sheet level-card"><span class="lv">{{ lv.level }}</span><div><b>{{ lv.name }}</b><div class="small muted">{{ lv.xp }} XP{% if lv.next %} · {{ lv.to_next }} XP lagi ke level {{ lv.level + 1 }}{% endif %}</div><div class="ruler" style="margin-top:6px;width:200px"><div class="fill" style="width:{{ lv.progress }}%"></div></div></div></div>
+</div>
+<div class="ach-grid">
+  {% for a in summary.achievements %}
+    <article class="ach {{ '' if a.earned else 'off' }}">
+      {% if a.earned %}<span class="ribbon">DIPEROLEH</span>{% endif %}
+      <span class="medal {{ '' if a.earned else 'off' }}">{{ icon(a.icon if a.earned else 'lock', 36) }}</span>
+      <h3 style="margin:0">{{ a.title }}</h3>
+      <p class="small" style="margin:0">{{ a.description }}</p>
+      <span class="bonus">+{{ a.xp_bonus }} XP</span>
+      {% if a.earned %}<span class="small muted">{{ a.earned_at|datefmt }}</span>{% endif %}
+    </article>
+  {% endfor %}
+</div>
+<h2 style="margin-top:34px">Bintang &amp; Level</h2>
+<div class="grid cols-2">
+  <div class="notebook">
+    <b>Bintang penghargaan</b> diberikan di setiap latihan, game, dan evaluasi:<br>
+    ★★★ nilai ≥ 90 · ★★ nilai ≥ 70 · ★ nilai ≥ 40.
+  </div>
+  <div class="sheet">
+    <b>Tangga level</b>
+    <ul class="history-mini" style="margin-top:6px">
+      {% for t, name in [(0,'Line Beginner'),(150,'Point Seeker'),(350,'Gradient Climber'),(600,'Equation Builder'),(900,'Line Engineer'),(1250,'Equation Master'),(1700,'SCARLINE Legend')] %}
+        <li><span>Lv {{ loop.index }} · {{ name }}{% if loop.index == lv.level %} ← kamu{% endif %}</span><span class="mono">{{ t }} XP</span></li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

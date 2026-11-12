@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Riwayat Belajar{% endblock %}
+{% block content %}
+<span class="eyebrow">Catatan laboratorium</span>
+<h1>Riwayat Pembelajaran</h1>
+<p class="muted">Hanya kamu yang dapat melihat riwayat ini.</p>
+
+<h2>Log aktivitas</h2>
+<div class="filter-row">
+  <a class="chip {{ 'chip-navy' if not kind }}" href="{{ url_for('pages.history') }}">Semua</a>
+  {% for t in types %}<a class="chip {{ 'chip-navy' if kind == t }}" href="{{ url_for('pages.history', type=t) }}">{{ t|capitalize }}</a>{% endfor %}
+</div>
+{% if logs %}
+<div class="table-wrap"><table class="data">
+  <thead><tr><th>Tanggal</th><th>Jenis</th><th>Aktivitas</th><th>Nilai</th><th>XP</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for a in logs %}
+    <tr><td>{{ a.created_at|datefmt }}</td><td>{{ a.activity_type|capitalize }}</td><td>{{ a.title }}</td><td>{{ a.score if a.score is not none else '—' }}</td><td>{{ '+' ~ a.xp_awarded if a.xp_awarded else '—' }}</td><td><span class="status {{ (a.status or '')|replace(' ', '-') }}">{{ a.status|capitalize }}</span></td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}<div class="empty">{{ scar('think', 90) }}<p>Belum ada aktivitas tercatat.</p></div>{% endif %}
+
+<div class="grid cols-2" style="margin-top:28px">
+  <section>
+    <h2>Nilai latihan &amp; evaluasi</h2>
+    {% if quizzes %}
+    <div class="table-wrap"><table class="data">
+      <thead><tr><th>Tanggal</th><th>Aktivitas</th><th>Nilai</th><th>★</th></tr></thead>
+      <tbody>{% for q in quizzes %}
+        {% set nm = 'Final Line Challenge' if q.quiz_slug == 'final-challenge' else ('Tantangan Harian' if q.quiz_slug == 'daily' else ('Training Level ' ~ q.quiz_slug.split('-')[1] if q.quiz_slug.startswith('training-') else 'Mini quiz ' ~ lesson_names.get(q.quiz_slug[7:], q.quiz_slug))) %}
+        <tr><td>{{ q.created_at|datefmt }}</td><td>{{ nm }}</td><td><b>{{ q.score }}</b> ({{ q.correct }}/{{ q.total }})</td><td>{{ q.stars }}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    {% else %}<p class="muted">Belum ada.</p>{% endif %}
+  </section>
+  <section>
+    <h2>Hasil permainan</h2>
+    {% if games %}
+    <div class="table-wrap"><table class="data">
+      <thead><tr><th>Tanggal</th><th>Game</th><th>Skor</th><th>★</th></tr></thead>
+      <tbody>{% for g in games %}<tr><td>{{ g.created_at|datefmt }}</td><td>{{ game_names.get(g.game_slug, g.game_slug) }} <span class="small muted">({{ g.difficulty }})</span></td><td><b>{{ g.score }}</b>/{{ g.max_score }} · {{ g.percent }}%</td><td>{{ g.stars }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<p class="muted">Belum ada.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

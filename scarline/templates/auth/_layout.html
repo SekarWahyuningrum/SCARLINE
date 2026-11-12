@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="auth-wrap">
+  <aside class="auth-side">
+    <div>
+      <span class="brand-word" style="color:var(--cream)">SCAR<span>LINE</span></span>
+      <p class="muted" style="margin-top:4px">Discover the Line, Master the Equation!</p>
+    </div>
+    <div class="center">{{ scar(side_mood|default('welcome'), 190, cls='idle-bob') }}</div>
+    <div class="scar-say"><div class="bubble">{% block side_text %}Halo, Line Explorer!{% endblock %}</div></div>
+  </aside>
+  <section class="auth-form">
+    {% if not supabase_ready %}
+      <div class="notice error">{{ icon('info', 18) }} <b>Supabase belum dikonfigurasi.</b> Admin perlu mengisi <code>SUPABASE_URL</code> dan <code>SUPABASE_ANON_KEY</code> di file <code>.env</code>. Lihat panduan di README.md.</div>
+    {% elif not supabase_write_ready %}
+      <div class="notice">{{ icon('info', 18) }} <code>SUPABASE_SERVICE_ROLE_KEY</code> belum diatur di server, sehingga progres belajar belum bisa disimpan. Lihat README.md.</div>
+    {% endif %}
+    {% block form %}{% endblock %}
+  </section>
+</div>
+{% endblock %}

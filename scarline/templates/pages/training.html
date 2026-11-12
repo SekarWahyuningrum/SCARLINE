@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Training Zone{% endblock %}
+{% block content %}
+<div class="section-head">
+  <div>
+    <span class="eyebrow">Bank soal bertingkat</span>
+    <h1>SCARLINE TRAINING ZONE</h1>
+    <p class="muted">Sepuluh tipe soal: pilihan ganda, benar/salah, isian angka, menentukan titik, mengidentifikasi gradien, melengkapi persamaan, menentukan persamaan, membaca grafik, memasangkan garis, dan soal cerita. Jika salah, SCAR menjelaskan bagian yang perlu diperbaiki.</p>
+  </div>
+  {{ bubble('XP Training diberikan 10 per jawaban benar yang melampaui rekor terbaikmu di level itu.', 'hint', 70) }}
+</div>
+
+<div class="grid cols-3">
+  {% for lvl, info in levels.items() %}
+    <article class="{{ 'paper' if lvl == 2 else 'sheet' }} {{ 'tape' if lvl == 1 }}" style="display:flex;flex-direction:column;gap:10px">
+      <div class="row between">
+        <span class="chip {{ ['chip-teal','chip-orange','chip-navy'][lvl-1] }}">LEVEL {{ lvl }}</span>
+        {% if best.get(lvl) is not none %}<span class="mono small">Terbaik: {{ best[lvl] }}</span>{% endif %}
+      </div>
+      <h2 style="margin:0">{{ icon(info.icon, 26) }} {{ info.name }}</h2>
+      <p style="margin:0">{{ info.desc }}</p>
+      <p class="small muted" style="margin:0">{{ bank[lvl]|length }} soal · {{ bank[lvl]|map(attribute='type')|unique|list|length }} tipe soal</p>
+      <div class="ruler {{ 'teal' if lvl != 2 }}"><div class="fill" style="width:{{ best.get(lvl, 0) }}%"></div></div>
+      <a class="btn btn-primary" style="margin-top:auto" href="{{ url_for('pages.training_level', level=lvl) }}">{{ icon('play', 16) }} {{ 'Ulangi' if best.get(lvl) is not none else 'Mulai' }} Level {{ lvl }}</a>
+    </article>
+  {% endfor %}
+</div>
+
+<div class="board" style="margin-top:26px">
+  <div class="row between">
+    <div><h3 style="margin:0">{{ icon('calendar', 18) }} Tantangan Harian</h3><p class="muted" style="margin:6px 0 0">3 soal acak (satu dari tiap level), berganti setiap hari. Klaim XP sekali per hari.</p></div>
+    <a class="btn btn-yellow" href="{{ url_for('pages.daily') }}">Mainkan {{ icon('arrow-right', 16) }}</a>
+  </div>
+</div>
+{% endblock %}
