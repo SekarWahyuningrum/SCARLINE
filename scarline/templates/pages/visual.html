@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Visual Learning Mode{% endblock %}
+{% block content %}
+<div class="section-head">
+  <div><span class="eyebrow">Lihat, bukan hanya baca</span><h1>VISUAL LEARNING MODE</h1>
+    <p class="muted">Sembilan animasi konsep persamaan garis lurus. Putar, jeda, atau geser penggaris waktu untuk melihat setiap langkah dengan kecepatanmu sendiri.</p></div>
+  {{ bubble('Perhatikan angka-angka yang bergerak bersama grafiknya — di situlah rahasianya!', 'explain', 70) }}
+</div>
+
+<div class="visual-layout">
+  <nav class="scene-list" aria-label="Daftar animasi" id="scene-list"></nav>
+  <section class="scene-stage glass">
+    <div class="row between"><h2 id="scene-title" style="margin:0">—</h2><span class="chip chip-navy" id="scene-no"></span></div>
+    <div class="scene-grid">
+      <div id="scene-plane" class="scene-plane"></div>
+      <div class="scene-side">
+        <div class="eq-display" id="scene-eq" aria-live="polite">&nbsp;</div>
+        <ol class="scene-steps" id="scene-steps"></ol>
+        <div class="index-card"><p id="scene-explain" style="margin:0"></p></div>
+      </div>
+    </div>
+    <div class="scene-controls">
+      <button type="button" class="btn btn-sm btn-primary" id="sc-play">{{ icon('play', 14) }} <span>Putar</span></button>
+      <button type="button" class="btn btn-sm" id="sc-replay">{{ icon('refresh', 14) }} Ulang</button>
+      <button type="button" class="btn btn-sm btn-ghost" id="sc-step">Langkah berikutnya →</button>
+      <input type="range" id="sc-scrub" min="0" max="1000" value="0" aria-label="Penggaris waktu animasi">
+    </div>
+    <div class="row between" style="margin-top:10px">
+      <button type="button" class="btn btn-sm btn-ghost" id="sc-prev">← Animasi sebelumnya</button>
+      <button type="button" class="btn btn-sm btn-teal" id="sc-next">Animasi berikutnya →</button>
+    </div>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/plane.js') }}"></script>
+<script src="{{ url_for('static', filename='js/visual.js') }}"></script>
+{% endblock %}

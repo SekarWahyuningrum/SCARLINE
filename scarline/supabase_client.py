@@ -235,3 +235,12 @@ class SupabaseClient:
             params=self._filters(filters),
             payload=values,
         ) or []
+
+    def delete(self, table: str, filters: Dict[str, FilterValue]) -> List[dict]:
+        if not filters:
+            raise SupabaseError("Hapus tanpa filter ditolak demi keamanan.", 400)
+        return self._request(
+            "DELETE", f"/rest/v1/{table}",
+            headers=self._headers(service=True, extra={"Prefer": "return=representation"}),
+            params=self._filters(filters),
+        ) or []

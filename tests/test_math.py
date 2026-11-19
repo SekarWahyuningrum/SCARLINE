@@ -5,7 +5,17 @@ from fractions import Fraction
 import pytest
 
 from scarline import mathcore as mc
-from scarline.content import FINAL_BANK, LESSON_QUIZZES, LESSONS, QUESTION_BY_ID, TRAINING_BANK
+from scarline.content import (
+    FINAL_BANK,
+    LESSON_QUIZZES,
+    LESSONS,
+    POSTTEST,
+    PRETEST,
+    QUESTION_BY_ID,
+    REAL_CASES,
+    SECRET_MISSIONS,
+    TRAINING_BANK,
+)
 from scarline.games import GAME_BY_SLUG
 from scarline.grading import grade, public_question
 from scarline.mathcore import MathInputError
@@ -74,6 +84,12 @@ def all_qs():
     for qs in TRAINING_BANK.values():
         yield from qs
     yield from FINAL_BANK
+    yield from PRETEST
+    yield from POSTTEST
+    for m in SECRET_MISSIONS:
+        yield from m["questions"]
+    for c in REAL_CASES:
+        yield from c["questions"]
 
 
 @pytest.mark.parametrize("q", list(all_qs()), ids=lambda q: q["id"])
@@ -163,6 +179,9 @@ def test_game_generators_are_solvable(slug, difficulty):
             if r.get("q"):
                 assert grade(r["q"], r["q"]["answer"])["correct"]
                 assert "answer" not in r["public"] or slug == "coordinate-hunter"
+            elif "kind" not in r:  # line-detective, parallel-perpendicular
+                assert mod.check(r, r["answer"])["correct"]
+                assert "answer" not in r["public"]
             elif r["kind"] == "set":
                 m = Fraction(r["m"])
                 assert mod.check(r, {"rise": m.numerator, "run": m.denominator})["correct"]

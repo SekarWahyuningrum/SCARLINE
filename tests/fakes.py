@@ -19,6 +19,9 @@ UNIQUE = {
     "user_stats": [("user_id",)],
     "user_achievements": [("user_id", "achievement_slug")],
     "daily_claims": [("user_id", "claim_date")],
+    "mistakes": [("user_id", "question_id")],
+    "user_preferences": [("user_id",)],
+    "challenge_progress": [("user_id", "kind", "ref")],
 }
 OWNER = {"profiles": "id"}
 _clock = itertools.count()
@@ -33,6 +36,7 @@ class FakeSupabase:
         self.tokens = {}      # access_token -> user_id
         self.refresh_tokens = {}
         self.admin_created = []
+        self.missing_tables = set()  # simulasi migrasi 002 belum dijalankan
         self.recover_calls = []
         self.trigger = True
 
@@ -110,14 +114,20 @@ class FakeSupabase:
                 return False
         return True
 
+    def _exists(self, table):
+        if table in self.missing_tables:
+            raise SupabaseError(f"Could not find the table 'public.{table}' in the schema cache", 404)
+
     def select(self, table, *, token=None, filters=None, columns="*", order=None, limit=None):
+        self._exists(table)
         rows = [r for r in self.tables.get(table, []) if self._match(r, filters)]
         if token is not None:  # RLS: hanya baris milik pemilik token
             uid = self.tokens.get(token)
             if uid is None:
                 raise SupabaseError("JWT expired", 401)
             owner = OWNER.get(table, "user_id")
-            if table in ("profiles", "lesson_progress", "quiz_attempts", "game_attempts", "user_stats", "user_achievements", "activity_logs", "daily_claims"):
+            if table in ("profiles", "lesson_progress", "quiz_attempts", "game_attempts", "user_stats", "user_achievements", "activity_logs", "daily_claims",
+                         "assessment_attempts", "mistakes", "diary_notes", "user_preferences", "challenge_progress"):
                 rows = [r for r in rows if r.get(owner) == uid]
         if order:
             col, _, direction = order.partition(".")
@@ -146,10 +156,12 @@ class FakeSupabase:
         return row
 
     def insert(self, table, rows):
+        self._exists(table)
         rows = rows if isinstance(rows, list) else [rows]
         return [copy.deepcopy(self._insert_row(table, r)) for r in rows]
 
     def upsert(self, table, rows, on_conflict, ignore_duplicates=False):
+        self._exists(table)
         rows = rows if isinstance(rows, list) else [rows]
         out = []
         for r in rows:
@@ -163,9 +175,18 @@ class FakeSupabase:
         return out
 
     def update(self, table, filters, values, *, token=None):
+        self._exists(table)
         out = []
         for r in self.tables.get(table, []):
             if self._match(r, filters):
                 r.update(values)
                 out.append(copy.deepcopy(r))
         return out
+
+    def delete(self, table, filters):
+        self._exists(table)
+        keep, out = [], []
+        for r in self.tables.get(table, []):
+            (out if self._match(r, filters) else keep).append(r)
+        self.tables[table] = keep
+        return copy.deepcopy(out)

@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% set is_pre = kind == 'pretest' %}
+{% block title %}{{ 'Pre-Test' if is_pre else 'Post-Test' }}{% endblock %}
+{% block content %}
+<div class="quiz-shell" style="max-width:980px">
+  <span class="eyebrow">{{ 'Langkah 02 · Sebelum petualangan' if is_pre else 'Langkah 11 · Setelah petualangan' }}</span>
+  <h1>{{ 'PRE-TEST' if is_pre else 'POST-TEST' }}</h1>
+  <p class="muted" style="max-width:720px">{% if is_pre %}Pre-test mengukur kemampuan awalmu tentang Persamaan Garis Lurus. Nilainya <b>tidak</b> menjadi syarat membuka materi — siapa pun tetap bisa melanjutkan petualangan.{% else %}Post-test mengukur kemampuanmu setelah menjelajahi seluruh SCARLINE WORLD. Soalnya berbeda dari pre-test, tetapi mengukur kompetensi yang sama, sehingga perkembanganmu bisa dibandingkan dengan jujur.{% endif %}</p>
+
+  {% if locked %}
+    <div class="sheet" style="margin-top:18px">
+      {{ bubble('Post-test terbuka setelah petualangan selesai: tuntaskan ketujuh misi (' ~ summary.done|length ~ '/7) dan kerjakan Final Line Challenge minimal sekali.', 'hint', 84) }}
+      <div class="row" style="margin-top:14px">
+        <a class="btn btn-primary" href="{{ url_for('pages.adventure_map') }}">{{ icon('map', 16) }} Lanjutkan petualangan</a>
+        {% if summary.final_unlocked %}<a class="btn" href="{{ url_for('pages.final') }}">{{ icon('trophy', 16) }} Ke Final Line Challenge</a>{% endif %}
+      </div>
+    </div>
+  {% else %}
+    <div class="exam-host glass" id="exam-host" data-exam-kind="{{ kind }}" data-exam-title="{{ 'Pre-Test' if is_pre else 'Post-Test' }}"
+         data-exam-back="{{ '/map' if is_pre else '/certificate' }}" data-exam-back-label="{{ 'Masuk ke Adventure Map' if is_pre else 'Lihat sertifikat' }}">
+      <div class="exam-intro">
+        {{ scar('explain' if is_pre else 'hint', 120, cls='idle-bob') }}
+        <div>
+          <h3>{{ count }} soal pilihan ganda · tingkat kesulitan bertahap</h3>
+          <ul class="checklist">
+            <li>Setiap soal memiliki empat pilihan jawaban.</li>
+            <li>Indikator nomor soal dan progres pengerjaan selalu terlihat.</li>
+            <li>Setelah dikirim: nilai akhir, jumlah benar & salah, jawaban benar, dan pembahasan setiap soal.</li>
+            <li>Cakupan: {% for t in topics %}{{ topic_labels[t] }}{{ ', ' if not loop.last }}{% endfor %}.</li>
+            <li>Tidak ada batas waktu. Kerjakan dengan tenang!</li>
+          </ul>
+          <button type="button" class="btn btn-primary btn-lg" data-exam-start>{{ icon('play', 18) }} {{ 'Mulai Pre-Test' if not history else 'Kerjakan lagi' }}</button>
+          <p class="small" data-exam-error style="color:var(--red);font-weight:700"></p>
+        </div>
+      </div>
+      <div class="hidden" data-exam-run></div>
+    </div>
+  {% endif %}
+
+  {% if comparison %}
+  <section class="sheet" style="margin-top:24px">
+    <h2>Perbandingan terakhir</h2>
+    <div id="cmp-summary"></div>
+    <div id="cmp-chart" style="margin-top:14px"></div>
+  </section>
+  {% endif %}
+
+  <section style="margin-top:26px">
+    <h3>Riwayat {{ 'pre-test' if is_pre else 'post-test' }}</h3>
+    {% if history %}
+      <div class="table-wrap"><table class="data">
+        <thead><tr><th>Tanggal</th><th>Nilai</th><th>Benar</th><th>Salah</th><th>Durasi</th></tr></thead>
+        <tbody>{% for h in history|reverse %}<tr><td>{{ h.created_at|datefmt }}{% if loop.last %} <span class="chip">pertama</span>{% endif %}</td><td><b>{{ h.score }}</b></td><td>{{ h.correct }}</td><td>{{ h.total - h.correct }}</td><td>{{ h.duration_seconds // 60 }}m {{ h.duration_seconds % 60 }}d</td></tr>{% endfor %}</tbody>
+      </table></div>
+      {% if is_pre %}<p class="small muted">Nilai pre-test <b>pertama</b> dipakai sebagai kemampuan awal dalam perbandingan.</p>{% endif %}
+    {% else %}
+      <div class="empty">{{ scar('think', 70) }}<p>Belum ada riwayat. Hasilmu akan tersimpan otomatis di akunmu.</p></div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/plane.js') }}"></script>
+<script src="{{ url_for('static', filename='js/quiz.js') }}"></script>
+<script src="{{ url_for('static', filename='js/exam.js') }}"></script>
+{% if comparison %}
+<script>
+(function () {
+  var data = {{ comparison|tojson }};
+  document.getElementById('cmp-summary').appendChild(SC.compareSummary(data));
+  SC.compareChart(document.getElementById('cmp-chart'), data);
+})();
+</script>
+{% endif %}
+{% endblock %}

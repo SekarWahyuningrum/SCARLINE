@@ -261,7 +261,8 @@
       }
       if (l.label) {
         var pos = self._labelPos(l);
-        var t = svgEl('text', { x: pos[0], y: -pos[1], 'text-anchor': pos[2] || 'start', class: 'ln-label', 'font-size': fs * 0.9, fill: l.color === 'teal' || (l.cls || '').indexOf('teal') >= 0 ? '#4C6F68' : (l.cls || '').indexOf('navy') >= 0 ? '#25334A' : '#A65F31' });
+        var tone = l.color === 'teal' || (l.cls || '').indexOf('teal') >= 0 ? 'teal' : (l.cls || '').indexOf('navy') >= 0 ? 'navy' : (l.labelTone || 'orange');
+        var t = svgEl('text', { x: pos[0], y: -pos[1], 'text-anchor': pos[2] || 'start', class: 'ln-label tone-' + tone, 'font-size': fs * 0.9 });
         t.textContent = l.label;
         svg.appendChild(t);
       }

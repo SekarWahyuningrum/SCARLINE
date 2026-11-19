@@ -52,10 +52,10 @@
         btns.forEach(function (b) { b.disabled = true; if (b.classList.contains('sel')) b.classList.add(correct ? 'right' : 'wrong'); });
       };
     } else if (q.type === 'num') {
-      var inp = el('input', { class: 'num-input', style: 'width:160px', inputmode: 'decimal', 'aria-label': 'Jawaban', placeholder: 'mis. -1/2' });
+      var inp = el('input', { class: 'num-input', style: 'width:160px', inputmode: 'decimal', 'aria-label': 'Jawaban', placeholder: q.money ? 'mis. 25000' : 'mis. -1/2' });
       inp.addEventListener('input', function () { answer = inp.value.trim() || null; onChange(answer); });
       inp.addEventListener('keydown', function (e) { if (e.key === 'Enter' && opts.onEnter) opts.onEnter(); });
-      body.appendChild(el('div', { class: 'row' }, [el('b', { text: 'Jawaban:' }), inp, el('span', { class: 'small muted', text: 'Boleh bilangan bulat, desimal, atau pecahan (3/4).' })]));
+      body.appendChild(el('div', { class: 'row' }, [el('b', { text: 'Jawaban:' }), inp, el('span', { class: 'small muted', text: q.money ? 'Tulis nominal rupiah, mis. 25000 atau Rp25.000.' : 'Boleh bilangan bulat, desimal, atau pecahan (3/4).' })]));
       api.setAnswer = function (v) { if (v !== null && v !== undefined) { inp.value = v; answer = v; } };
       api.mark = function () { inp.disabled = true; };
       api.focus = function () { inp.focus(); };
@@ -173,6 +173,8 @@
       SC.updateHeaderXP(data.stats);
     }
     SC.celebrateAchievements(data.new_achievements);
+    if (SC.sfx) SC.sfx(good ? 'win' : 'done');
+    if (good && SC.confetti) SC.confetti({ count: 90 });
     var actions = el('div', { class: 'row', style: 'justify-content:center;margin-top:16px' });
     (opts.actions || []).forEach(function (a) { actions.appendChild(a); });
     p.appendChild(actions);
@@ -186,7 +188,7 @@
 
     function start() {
       mount.innerHTML = '<p class="center"><span class="spin" style="display:inline-block;width:22px;height:22px;border:3px solid var(--navy);border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite"></span> SCAR menyiapkan soal...</p>';
-      SC.api('/api/runs', { kind: cfg.kind, ref: cfg.ref }).then(function (r) {
+      SC.api('/api/runs', Object.assign({ kind: cfg.kind, ref: cfg.ref }, typeof cfg.extra === 'function' ? cfg.extra() : (cfg.extra || {}))).then(function (r) {
         if (!r.ok) return err(r.data.error || 'Gagal memulai.');
         state.run = r.data; state.i = 0; state.score = 0;
         show();
@@ -210,7 +212,17 @@
       var check = el('button', { class: 'btn btn-primary', type: 'button', text: 'Periksa Jawaban' });
       var fbHolder = el('div', {});
       card.appendChild(msg);
-      card.appendChild(el('div', { class: 'row' }, [check]));
+      var btnRow = el('div', { class: 'row' }, [check]);
+      if (q.hint) {
+        var hintBox = el('div', { class: 'hint-box hidden', role: 'note' }, [SC.scarSvg('hint', 44), el('p', { text: q.hint })]);
+        var hintBtn = el('button', { class: 'btn btn-ghost', type: 'button', html: '💡 Lihat petunjuk' });
+        hintBtn.addEventListener('click', function () { hintBox.classList.remove('hidden'); hintBtn.disabled = true; SC.sfx && SC.sfx('click'); if (cfg.onHint) cfg.onHint(state.i); });
+        btnRow.appendChild(hintBtn);
+        card.appendChild(btnRow);
+        card.appendChild(hintBox);
+      } else {
+        card.appendChild(btnRow);
+      }
       card.appendChild(fbHolder);
       mount.appendChild(card);
       if (view.focus) view.focus();
@@ -224,7 +236,9 @@
           if (r.status === 422) { SC.busy(check, false); msg.textContent = r.data.message || r.data.error; return; }
           if (!r.ok) { SC.busy(check, false); msg.textContent = r.data.error || 'Gagal memeriksa jawaban.'; return; }
           view.lock(); view.mark(r.data.correct);
+          if (SC.sfx) SC.sfx(r.data.correct ? 'correct' : 'wrong');
           if (r.data.correct) state.score++;
+          if (cfg.onAnswer) cfg.onAnswer(r.data, q, state.i);
           fbHolder.appendChild(feedbackBlock(r.data));
           check.remove();
           var last = state.i === run.total - 1;

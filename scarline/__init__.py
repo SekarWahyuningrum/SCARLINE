@@ -58,7 +58,7 @@ def create_app(overrides: dict | None = None, db=None) -> Flask:
             return getattr(app.jinja_env.get_template(template).module, name)(*args, **kwargs)
         return call
 
-    for tpl, names in (("partials/scar.html", ("scar", "bubble")), ("partials/icons.html", ("icon",)),
+    for tpl, names in (("partials/scar.html", ("scar", "bubble", "avatar")), ("partials/icons.html", ("icon",)),
                        ("partials/forms.html", ("pw_field",))):
         for name in names:
             app.jinja_env.globals[name] = _macro(tpl, name)

@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% block title %}SCAR's Diary{% endblock %}
+{% block content %}
+<div class="section-head">
+  <div><span class="eyebrow">Buku catatan petualangan</span><h1>SCAR'S DIARY</h1>
+    <p class="muted">Semua yang kamu pelajari, rumus penting, materi favorit, dan catatan pribadimu dalam satu buku.</p></div>
+  {{ bubble('Menulis dengan kata-katamu sendiri membuat ingatan lebih kuat. Ayo tulis catatan pertamamu!', 'explain', 70) }}
+</div>
+
+<div class="diary-book">
+  <nav class="diary-tabs" role="tablist" aria-label="Bagian diary">
+    {% set tabs = [('notes', 'Catatan Pribadi', 'note'), ('learned', 'Materi Dipelajari', 'book'), ('formulas', 'Rumus Penting', 'calc'), ('favs', 'Favorit & Bookmark', 'bookmark'), ('missions', 'Misi Selesai', 'flag'), ('awards', 'Pencapaian', 'award'), ('summary', 'Rangkuman', 'sparkles')] %}
+    {% for key, label, ic in tabs %}<button role="tab" type="button" id="dt-{{ key }}" aria-controls="dp-{{ key }}" aria-selected="{{ 'true' if loop.first else 'false' }}" class="dtab r{{ loop.index }}">{{ icon(ic, 16) }} <span>{{ label }}</span></button>{% endfor %}
+  </nav>
+
+  <div class="diary-pages">
+    <section role="tabpanel" id="dp-notes" aria-labelledby="dt-notes" class="diary-page">
+      <div class="diary-spread">
+        <form class="diary-editor" id="note-form" novalidate>
+          <h2 id="note-form-title">Catatan baru</h2>
+          <input type="hidden" name="id" value="">
+          <div class="field"><label for="note-title">Judul</label><input id="note-title" name="title" maxlength="80" required placeholder="Misalnya: Cara cepat mencari gradien"></div>
+          <div class="field"><label for="note-lesson">Materi terkait (opsional)</label>
+            <select id="note-lesson" name="lesson_slug"><option value="">— Umum —</option>{% for l in lessons %}<option value="{{ l.slug }}">Mission {{ '%02d'|format(l.no) }} · {{ l.region }}</option>{% endfor %}</select></div>
+          <div class="field"><label for="note-body">Isi catatan</label><textarea id="note-body" name="body" rows="7" maxlength="4000" placeholder="Tulis dengan kata-katamu sendiri..."></textarea><span class="small muted" id="note-count">0 / 4000</span></div>
+          <p class="small" id="note-error" style="color:var(--red);font-weight:700" aria-live="polite"></p>
+          <div class="row"><button class="btn btn-primary" type="submit" id="note-save">{{ icon('check', 16) }} Simpan catatan</button><button class="btn btn-ghost hidden" type="button" id="note-cancel">Batal edit</button></div>
+        </form>
+        <div>
+          <h2>Catatanku <span class="chip" id="note-count-chip">{{ notes|length }}</span></h2>
+          <ul class="note-list" id="note-list">
+            {% for n in notes %}
+              <li class="note" data-note='{{ {"id": n.id, "title": n.title, "body": n.body, "lesson_slug": n.lesson_slug or ""}|tojson }}'>
+                <div class="row between"><b>{{ n.title }}</b><span class="small muted">{{ n.updated_at|datefmt }}</span></div>
+                {% if n.lesson_slug %}<span class="chip chip-teal">{{ lesson_names.get(n.lesson_slug, '') }}</span>{% endif %}
+                <p>{{ n.body }}</p>
+                <div class="row"><button class="btn btn-sm" type="button" data-edit>Edit</button><button class="btn btn-sm btn-ghost" type="button" data-delete>Hapus</button></div>
+              </li>
+            {% endfor %}
+          </ul>
+          <div class="empty {{ 'hidden' if notes }}" id="note-empty">{{ scar('think', 60) }}<p>Belum ada catatan. Tulis yang pertama di sebelah kiri!</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section role="tabpanel" id="dp-learned" aria-labelledby="dt-learned" class="diary-page hidden">
+      <h2>Materi yang sudah kupelajari</h2>
+      {% if done_lessons %}
+        <div class="learned-grid">{% for l in done_lessons %}<a class="learned" href="{{ url_for('pages.mission', slug=l.slug) }}"><span class="no">M{{ '%02d'|format(l.no) }}</span>{{ icon(l.icon, 22) }}<b>{{ l.region }}</b><span class="small">{{ l.title }}</span></a>{% endfor %}</div>
+      {% else %}<div class="empty">{{ scar('hint', 60) }}<p>Belum ada misi yang selesai. Mulai dari <a href="{{ url_for('pages.mission', slug='coordinate-city') }}">Coordinate City</a>.</p></div>{% endif %}
+    </section>
+
+    <section role="tabpanel" id="dp-formulas" aria-labelledby="dt-formulas" class="diary-page hidden">
+      <h2>Rumus penting</h2>
+      <p class="small muted">Klik kartu untuk membaliknya dan melihat keterangan simbol. Rumus dari misi yang sudah selesai ditandai ★.</p>
+      <div class="flip-grid">
+        {% set done_slugs = done_lessons|map(attribute='slug')|list %}
+        {% for l in lessons %}{% for f in l.formulas %}
+          <button type="button" class="flip-card" aria-pressed="false">
+            <span class="flip-inner">
+              <span class="flip-front"><small>{{ l.region }}{{ ' ★' if l.slug in done_slugs }}</small><b class="mono">{{ f.expr }}</b><span>{{ f.label }}</span></span>
+              <span class="flip-back"><small>Keterangan simbol</small>{% for sym in f.symbols %}<span><b class="mono">{{ sym[0] }}</b> = {{ sym[1] }}</span>{% endfor %}</span>
+            </span>
+          </button>
+        {% endfor %}{% endfor %}
+      </div>
+    </section>
+
+    <section role="tabpanel" id="dp-favs" aria-labelledby="dt-favs" class="diary-page hidden">
+      <div class="grid cols-2">
+        <div><h2>{{ icon('heart-on', 20) }} Materi favorit</h2>
+          {% if favorites %}<ul class="link-list">{% for l in favorites %}<li><a href="{{ url_for('pages.mission', slug=l.slug) }}">{{ l.region }} — {{ l.title }}</a></li>{% endfor %}</ul>
+          {% else %}<p class="muted">Belum ada. Tekan “Jadikan favorit” di halaman misi.</p>{% endif %}</div>
+        <div><h2>{{ icon('bookmark-on', 20) }} Bookmark</h2>
+          {% if bookmarks %}<ul class="link-list">{% for l in bookmarks %}<li><a href="{{ url_for('pages.mission', slug=l.slug) }}">{{ l.region }} — {{ l.title }}</a></li>{% endfor %}</ul>
+          {% else %}<p class="muted">Belum ada. Tekan “Bookmark” di halaman misi untuk menandai materi.</p>{% endif %}</div>
+      </div>
+    </section>
+
+    <section role="tabpanel" id="dp-missions" aria-labelledby="dt-missions" class="diary-page hidden">
+      <h2>Misi yang sudah selesai</h2>
+      <ol class="timeline">
+        {% for l in lessons %}
+          {% set p = summary.progress.get(l.slug) %}
+          <li class="{{ 'done' if p and p.status == 'completed' else ('open' if p else 'todo') }}"><b>Mission {{ '%02d'|format(l.no) }} — {{ l.region }}</b>
+            <span class="small muted">{% if p and p.status == 'completed' %}Selesai {{ p.completed_at|datefmt }} · nilai kuis {{ p.quiz_score }}{% elif p %}Sedang dipelajari{% else %}Belum dimulai{% endif %}</span></li>
+        {% endfor %}
+      </ol>
+    </section>
+
+    <section role="tabpanel" id="dp-awards" aria-labelledby="dt-awards" class="diary-page hidden">
+      <h2>Pencapaianku</h2>
+      <div class="ach-grid">
+        {% for a in summary.achievements %}
+          <div class="ach {{ '' if a.earned else 'off' }}"><span class="medal">{{ icon(a.icon, 24) }}</span><div><b>{{ a.title }}</b><span class="small">{{ a.description }}</span>{% if a.earned %}<span class="small muted">Diperoleh {{ a.earned_at|datefmt }}</span>{% endif %}</div></div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section role="tabpanel" id="dp-summary" aria-labelledby="dt-summary" class="diary-page hidden">
+      <h2>Rangkuman pembelajaran</h2>
+      {% if done_lessons %}
+        {% for l in done_lessons %}
+          <div class="summary-block"><h3>{{ l.region }} — {{ l.title }}</h3><ul>{% for s in l.summary %}<li>{{ s }}</li>{% endfor %}</ul></div>
+        {% endfor %}
+      {% else %}<p class="muted">Rangkuman setiap misi muncul di sini setelah misinya selesai.</p>{% endif %}
+      <p class="small muted">Total XP {{ summary.stats.total_xp }} · {{ summary.done|length }}/7 misi · {{ summary.earned|length }} lencana.</p>
+    </section>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/diary.js') }}"></script>
+{% endblock %}

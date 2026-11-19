@@ -1,55 +1,124 @@
 <!doctype html>
-<html lang="id">
+{% set P = header.prefs if header and header.prefs else {} %}
+<html lang="id" data-theme="light" data-pref-theme="{{ P.get('theme') or '' }}" data-pref-motion="{{ 'reduce' if P.get('reduce_motion') else '' }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token() }}">
-  <meta name="description" content="SCARLINE — platform belajar Persamaan Garis Lurus untuk SMP kelas VIII. Discover the Line, Master the Equation!">
+  <meta name="description" content="SCARLINE — A Mathematics Learning Experience. Petualangan belajar Persamaan Garis Lurus untuk SMP kelas VIII bersama SCAR.">
+  <meta name="theme-color" content="#25334A">
   <title>{% block title %}SCARLINE{% endblock %} · SCARLINE</title>
   <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
+  <script>
+  /* Terapkan tema & pengaturan animasi sebelum halaman digambar (mencegah kedipan). */
+  (function (d) {
+    var root = d.documentElement, pref = root.getAttribute('data-pref-theme'), stored = null, motion = null;
+    try { stored = localStorage.getItem('scarline-theme'); motion = localStorage.getItem('scarline-motion'); } catch (e) {}
+    var t = pref || stored || 'light';
+    if (t === 'system') t = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    root.setAttribute('data-theme', t);
+    var m = root.getAttribute('data-pref-motion') || motion || '';
+    if (m === 'reduce' || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) root.setAttribute('data-motion', 'reduce');
+  })(document);
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/scarline.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/world.css') }}">
   {% block head %}{% endblock %}
 </head>
-<body class="{% block body_class %}{% endblock %}">
+<body class="{% block body_class %}{% endblock %}" data-logged="{{ '1' if header else '' }}" data-v2="{{ '1' if header and g.get('v2') else '' }}"
+      data-prefs='{{ {"music": P.get("music") or False, "sfx": P.get("sfx") is not sameas false, "theme": P.get("theme") or ""}|tojson }}'>
   <a class="skip" href="#main">Lewati ke konten</a>
+
+  <div class="loader" id="loader" role="status" aria-live="polite">
+    <div class="loader-card">
+      {{ scar('celebrate', 120, cls='loader-scar', label='SCAR menyiapkan petualangan') }}
+      <div class="brand-word">SCAR<span>LINE</span></div>
+      <div class="loader-bar"><span></span></div>
+      <p class="loader-msg" data-loader-msg>Menyiapkan bidang koordinat...</p>
+    </div>
+  </div>
+  <script>try { if (sessionStorage.getItem('scarline-loaded')) document.getElementById('loader').remove(); } catch (e) {}</script>
+
+  <div class="world-bg" aria-hidden="true">
+    {% set syms = ['y = mx + c', 'm = Δy/Δx', '(x, y)', 'm₁ = m₂', 'm₁·m₂ = −1', 'ax + by + c = 0', '∥', '⊥', 'Δy', 'x', 'y', '0', '√', '+', '−', '(2, 3)'] %}
+    {% for s in syms %}<span class="float-sym" style="--x:{{ (loop.index * 37) % 96 + 2 }}%;--d:{{ 14 + (loop.index * 7) % 13 }}s;--delay:-{{ (loop.index * 3) % 17 }}s;--s:{{ 0.8 + (loop.index % 4) * 0.22 }}">{{ s }}</span>{% endfor %}
+    {% for i in range(14) %}<i class="spark-dot" style="--x:{{ (i * 53) % 97 }}%;--y:{{ (i * 29) % 91 }}%;--d:{{ 3 + i % 5 }}s"></i>{% endfor %}
+    <span class="glow-orb o1"></span><span class="glow-orb o2"></span><span class="glow-orb o3"></span>
+  </div>
+
   {% if header %}
-  <header class="topbar">
+  {% set lv = header.level %}
+  <header class="topbar" id="topbar">
     <a class="brand" href="{{ url_for('pages.dashboard') }}" aria-label="SCARLINE — ke Markas">
       <span class="brand-mark">{{ scar('welcome', 34, label='') }}</span>
       <span class="brand-word">SCAR<span>LINE</span></span>
     </a>
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="mainnav" data-nav-toggle>{{ icon('menu', 22) }}<span class="sr">Menu</span></button>
     <nav id="mainnav" class="mainnav" aria-label="Navigasi utama">
-      {% set items = [('pages.dashboard','Markas','home'),('pages.adventure_map','Peta','map'),('pages.lab','Lab','lab'),('pages.training','Latihan','target'),('pages.playground','Playground','gamepad'),('pages.final','Final','trophy')] %}
-      {% for ep, label, ic in items %}
-        {% set href = url_for(ep) %}
-        <a href="{{ href }}" class="{{ 'active' if current_path.startswith(href) or (ep=='pages.training' and current_path.startswith('/daily')) or (ep=='pages.adventure_map' and current_path.startswith('/mission')) }}">{{ icon(ic, 18) }}<span>{{ label }}</span></a>
-      {% endfor %}
+      {% set path = current_path %}
+      <a href="{{ url_for('pages.dashboard') }}" class="{{ 'active' if path.startswith('/dashboard') }}">{{ icon('home', 18) }}<span>Markas</span></a>
+      <a href="{{ url_for('pages.adventure_map') }}" class="{{ 'active' if path.startswith('/map') or path.startswith('/mission') }}">{{ icon('map', 18) }}<span>Peta</span></a>
+      {% set ns = namespace(learn=false) %}
+      {% for lp in ['/visual', '/lab', '/training', '/daily', '/real-life', '/pretest', '/posttest', '/final'] %}{% if path.startswith(lp) %}{% set ns.learn = true %}{% endif %}{% endfor %}
+      <details class="dd" data-dd>
+        <summary class="{{ 'active' if ns.learn }}">{{ icon('book', 18) }}<span>Belajar</span><svg class="chev" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></summary>
+        <div class="dd-menu">
+          <a href="{{ url_for('pages.visual') }}">{{ icon('eye-learn', 18) }}<span>Visual Learning Mode<small>Animasi konsep garis</small></span></a>
+          <a href="{{ url_for('pages.lab') }}">{{ icon('lab', 18) }}<span>Graph Laboratory<small>Grafik interaktif & kalkulator</small></span></a>
+          <a href="{{ url_for('pages.training') }}">{{ icon('target', 18) }}<span>Training Zone<small>Latihan 3 level</small></span></a>
+          <a href="{{ url_for('pages.daily') }}">{{ icon('calendar', 18) }}<span>Tantangan Harian<small>3 soal baru setiap hari</small></span></a>
+          <a href="{{ url_for('pages.real_life') }}">{{ icon('bike', 18) }}<span>Real-Life Challenge<small>Studi kasus sehari-hari</small></span></a>
+          <hr>
+          <a href="{{ url_for('pages.pretest') }}">{{ icon('flag', 18) }}<span>Pre-Test<small>Kemampuan awal</small></span></a>
+          <a href="{{ url_for('pages.final') }}">{{ icon('trophy', 18) }}<span>Final Line Challenge<small>Evaluasi akhir</small></span></a>
+          <a href="{{ url_for('pages.posttest') }}">{{ icon('growth', 18) }}<span>Post-Test<small>Ukur perkembanganmu</small></span></a>
+        </div>
+      </details>
+      <a href="{{ url_for('pages.playground') }}" class="{{ 'active' if path.startswith('/playground') }}">{{ icon('gamepad', 18) }}<span>Game</span></a>
+      <a href="{{ url_for('pages.secret') }}" class="{{ 'active' if path.startswith('/secret') }}">{{ icon('key', 18) }}<span>Misi Rahasia</span></a>
+      <a href="{{ url_for('pages.tutor_page') }}" class="{{ 'active' if path.startswith('/tutor') }}">{{ icon('chat', 18) }}<span>Tutor</span></a>
       <div class="nav-user">
-        <a href="{{ url_for('pages.profile') }}" class="user-chip" title="Profil">
-          <span class="lvl">Lv {{ header.level.level }}</span>
-          <span class="who">{{ header.profile.username }}</span>
-          <span class="xp" data-header-xp>{{ header.level.xp }} XP</span>
-        </a>
-        <a href="{{ url_for('pages.achievements') }}" class="icon-link" title="Lencana">{{ icon('award', 20) }}<span class="sr-md">Lencana</span></a>
-        <a href="{{ url_for('pages.history') }}" class="icon-link" title="Riwayat">{{ icon('history', 20) }}<span class="sr-md">Riwayat</span></a>
-        <form method="post" action="{{ url_for('auth.logout') }}" class="inline">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" class="icon-link" title="Keluar">{{ icon('logout', 20) }}<span class="sr-md">Keluar</span></button>
-        </form>
+        <button type="button" class="icon-link" data-search-open title="Cari materi (Ctrl+K)">{{ icon('search-lg', 20) }}<span class="sr-md">Cari materi</span></button>
+        <button type="button" class="icon-link" data-theme-toggle title="Ganti tema terang/gelap"><span class="if-light">{{ icon('moon', 20) }}</span><span class="if-dark">{{ icon('sun', 20) }}</span><span class="sr-md">Ganti tema</span></button>
+        <button type="button" class="icon-link" data-music-toggle aria-pressed="false" title="Musik latar"><span class="music-on">{{ icon('music', 20) }}</span><span class="music-off">{{ icon('music-off', 20) }}</span><span class="sr-md">Musik latar</span></button>
+        <details class="dd dd-right" data-dd>
+          <summary class="user-chip" title="Menu akun">
+            {{ avatar(P.avatar or 'explorer', 26) }}
+            <span class="lvl">Lv {{ lv.level }}</span>
+            <span class="who">{{ header.profile.username }}</span>
+            <span class="xp" data-header-xp data-level="{{ lv.level }}">{{ lv.xp }} XP</span>
+          </summary>
+          <div class="dd-menu">
+            <div class="dd-head"><b>{{ header.profile.full_name }}</b><small>{{ lv.name }} · {{ lv.xp }} XP</small><span class="ruler mini"><span class="fill" style="width:{{ lv.progress }}%"></span></span></div>
+            <a href="{{ url_for('pages.profile') }}">{{ icon('user', 18) }}<span>Profil Siswa</span></a>
+            <a href="{{ url_for('pages.progress') }}">{{ icon('growth', 18) }}<span>Grafik Perkembangan</span></a>
+            <a href="{{ url_for('pages.diary') }}">{{ icon('note', 18) }}<span>SCAR's Diary</span></a>
+            <a href="{{ url_for('pages.mistakes') }}">{{ icon('book', 18) }}<span>Mistake Notebook</span></a>
+            <a href="{{ url_for('pages.achievements') }}">{{ icon('award', 18) }}<span>Galeri Lencana</span></a>
+            <a href="{{ url_for('pages.history') }}">{{ icon('history', 18) }}<span>Riwayat Belajar</span></a>
+            <a href="{{ url_for('pages.certificate') }}">{{ icon('certificate', 18) }}<span>Sertifikat</span></a>
+            <a href="{{ url_for('pages.settings') }}">{{ icon('settings', 18) }}<span>Pengaturan</span></a>
+            <hr>
+            <form method="post" action="{{ url_for('auth.logout') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit">{{ icon('logout', 18) }}<span>Keluar</span></button>
+            </form>
+          </div>
+        </details>
       </div>
     </nav>
   </header>
   {% else %}
-  <header class="topbar public">
+  <header class="topbar public" id="topbar">
     <a class="brand" href="{{ url_for('pages.landing') }}" aria-label="SCARLINE — beranda">
       <span class="brand-mark">{{ scar('welcome', 34, label='') }}</span>
       <span class="brand-word">SCAR<span>LINE</span></span>
     </a>
     <nav class="pubnav" aria-label="Akun">
+      <button type="button" class="icon-link" data-theme-toggle title="Ganti tema terang/gelap"><span class="if-light">{{ icon('moon', 20) }}</span><span class="if-dark">{{ icon('sun', 20) }}</span><span class="sr-md">Ganti tema</span></button>
       <a href="{{ url_for('auth.login') }}" class="btn btn-ghost btn-sm">Masuk</a>
       <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-sm">Buat Akun</a>
     </nav>
@@ -68,17 +137,40 @@
     {% block content %}{% endblock %}
   </main>
 
+  {% block footer %}
   <footer class="footer">
     <div class="footer-inner">
       <span class="brand-word small">SCAR<span>LINE</span></span>
-      <span>Discover the Line, Master the Equation!</span>
-      <span class="muted">Materi Persamaan Garis Lurus · SMP Kelas VIII</span>
+      <span>A Mathematics Learning Experience</span>
+      <span class="muted">Persamaan Garis Lurus · SMP Kelas VIII</span>
     </div>
   </footer>
+  {% endblock %}
 
   <div class="toast-stack" id="toasts" aria-live="polite"></div>
+  <div id="modal-root"></div>
+  <button type="button" class="to-top" data-to-top aria-label="Kembali ke atas">{{ icon('arrow-up', 20) }}</button>
+  {% if header and not current_path.startswith('/tutor') %}
+  <button type="button" class="fab" data-open-tutor aria-label="Tanya SCAR AI Tutor" title="Butuh bantuan? Tanya SCAR!">
+    {{ scar('hint', 58, label='') }}<span class="fab-label">Tanya SCAR</span>
+  </button>
+  {% endif %}
+  {% if header %}
+  <dialog class="search-dialog" id="search-dialog" aria-label="Cari materi">
+    <div class="search-box">
+      {{ icon('search-lg', 20) }}
+      <input type="search" id="search-input" placeholder="Cari materi, rumus, atau halaman… (mis. gradien, tegak lurus)" autocomplete="off" aria-label="Kata kunci">
+      <button type="button" class="icon-link" data-search-close aria-label="Tutup">{{ icon('x', 18) }}</button>
+    </div>
+    <ul class="search-results" id="search-results" role="listbox"></ul>
+    <p class="small muted search-tip">Tekan <kbd>Ctrl</kbd> + <kbd>K</kbd> kapan saja untuk membuka pencarian.</p>
+  </dialog>
+  {% endif %}
   <template id="scar-template">{{ scar('happy', 64, label='') }}</template>
+  {% if header %}{% for ic in ['flag', 'target', 'mountain', 'pen', 'flask', 'parallel', 'gamepad', 'spark', 'compass', 'calc', 'ruler', 'search', 'flame', 'growth', 'trophy', 'crown'] %}<template id="badge-icon-{{ ic }}">{{ icon(ic, 44) }}</template>{% endfor %}{% endif %}
   <script src="{{ url_for('static', filename='js/core.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/fx.js') }}"></script>
+  {% if header %}<script src="{{ url_for('static', filename='js/tutor.js') }}" defer></script>{% endif %}
   {% block scripts %}{% endblock %}
 </body>
 </html>

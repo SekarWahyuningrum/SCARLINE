@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Grafik Perkembangan{% endblock %}
+{% block content %}
+<span class="eyebrow">Perkembangan belajar</span>
+<h1>Grafik Perkembangan</h1>
+<p class="muted" style="max-width:760px">Semua angka di halaman ini dihitung dari hasil belajar yang tersimpan di akunmu. SCAR tidak akan menyebut nilaimu naik jika memang tidak naik.</p>
+
+<section class="sheet" style="margin-top:18px">
+  <h2>Pre-Test vs Post-Test</h2>
+  {% if comparison %}
+    <div id="cmp-summary"></div>
+    <div id="cmp-chart" style="margin-top:14px"></div>
+    <p class="small muted">Pre-test pertama ({{ comparison.pre_date|datefmt }}) dibandingkan dengan post-test terakhir ({{ comparison.post_date|datefmt }}).</p>
+  {% elif pre_hist %}
+    {{ bubble('Nilai awalmu ' ~ pre_hist[0].score ~ '. Selesaikan petualangan dan post-test untuk melihat perbandingannya.', 'explain', 70) }}
+    <div class="row" style="margin-top:12px"><a class="btn btn-primary" href="{{ url_for('pages.posttest') if journey.posttest_unlocked else url_for('pages.adventure_map') }}">{{ 'Kerjakan Post-Test' if journey.posttest_unlocked else 'Lanjutkan petualangan' }}</a></div>
+  {% else %}
+    <div class="empty">{{ scar('think', 70) }}<p>Belum ada data pre-test. Mulai dari sini untuk mengukur perkembanganmu.</p><a class="btn btn-primary" href="{{ url_for('pages.pretest') }}">Kerjakan Pre-Test</a></div>
+  {% endif %}
+</section>
+
+<div class="grid cols-2" style="margin-top:22px;align-items:start">
+  <section class="sheet">
+    <h3>Akurasi per topik (semua aktivitas)</h3>
+    {% if accuracy %}
+      <ul class="acc-list">
+        {% for a in accuracy %}
+          <li>
+            <div class="row between"><span>{{ a.label }}</span><span class="mono small">{{ a.correct }}/{{ a.total }} · <b>{{ a.percent }}%</b></span></div>
+            <div class="acc-bar" role="img" aria-label="{{ a.label }} {{ a.percent }} persen"><span style="width:{{ a.percent }}%" class="{{ 'ok' if a.percent >= mastery else ('mid' if a.percent >= 50 else 'low') }}"></span></div>
+            <span class="small muted">{{ 'Dikuasai' if a.percent >= mastery else ('Hampir dikuasai' if a.percent >= 50 else 'Perlu latihan') }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+      <p class="small muted">Dihitung dari mini quiz, Training Zone, tantangan harian, Final Challenge, dan pre/post-test. Batas dikuasai: {{ mastery }}%.</p>
+    {% else %}
+      <p class="muted">Belum ada jawaban yang tersimpan.</p>
+    {% endif %}
+  </section>
+  <section class="stack">
+    <div class="sheet">
+      <h3>{{ icon('flame', 18) }} Learning streak</h3>
+      <p class="streak-num"><b>{{ streak.current }}</b> hari berturut-turut <span class="small muted">· rekor {{ streak.best }}</span></p>
+      <ol class="streak-days">{% for d in streak.last14 %}<li class="{{ 'on' if d.active }}" title="{{ d.date }}"></li>{% endfor %}</ol>
+    </div>
+    <div class="sheet recs">
+      <h3>{{ icon('sparkles', 18) }} Rekomendasi berikutnya</h3>
+      <ul class="rec-list">{% for r in recs %}<li><span class="ic">{{ icon(r.icon, 20) }}</span><div><b>{{ r.title }}</b><span class="small muted">{{ r.text }}</span></div><a class="btn btn-sm" href="{{ r.url }}">{{ r.cta }}</a></li>{% endfor %}</ul>
+    </div>
+  </section>
+</div>
+
+<section style="margin-top:22px">
+  <h3>Riwayat tes</h3>
+  <div class="table-wrap"><table class="data">
+    <thead><tr><th>Tanggal</th><th>Tes</th><th>Nilai</th><th>Benar</th></tr></thead>
+    <tbody>
+      {% for h in (pre_hist + post_hist)|sort(attribute='created_at', reverse=true) %}<tr><td>{{ h.created_at|datefmt }}</td><td>{{ 'Pre-test' if h.kind == 'pretest' else 'Post-test' }}</td><td><b>{{ h.score }}</b></td><td>{{ h.correct }}/{{ h.total }}</td></tr>{% else %}<tr><td colspan="4" class="muted">Belum ada.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</section>
+{% endblock %}
+{% block scripts %}
+{% if comparison %}
+<script src="{{ url_for('static', filename='js/exam.js') }}"></script>
+<script>
+(function () {
+  var data = {{ comparison|tojson }};
+  document.getElementById('cmp-summary').appendChild(SC.compareSummary(data));
+  SC.compareChart(document.getElementById('cmp-chart'), data);
+})();
+</script>
+{% endif %}
+{% endblock %}

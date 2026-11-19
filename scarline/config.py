@@ -30,6 +30,10 @@ class Config:
     # terkena batas kirim email bawaan Supabase. Set 1 untuk mewajibkan konfirmasi email.
     REQUIRE_EMAIL_CONFIRMATION = _bool("REQUIRE_EMAIL_CONFIRMATION", False)
 
+    # SCAR AI Tutor (opsional). Kunci HANYA dipakai server; tanpa kunci, tutor dasar lokal yang aktif.
+    ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    TUTOR_MODEL = os.environ.get("TUTOR_MODEL", "claude-opus-5-5").strip() or "claude-opus-5-5"
+
     SESSION_COOKIE_NAME = "scarline_session"
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"

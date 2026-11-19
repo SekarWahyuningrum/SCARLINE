@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block title %}{{ feature }}{% endblock %}
+{% block content %}
+<div class="empty" style="max-width:720px;margin:30px auto">
+  {{ scar('think', 130) }}
+  <h1 style="font-size:2rem">{{ feature }} belum aktif</h1>
+  <p>Fitur ini membutuhkan tabel database baru. Admin SCARLINE cukup menjalankan file <code>supabase/migrations/002_scarline_features.sql</code> satu kali di <b>Supabase → SQL Editor</b>. Migrasi ini hanya menambah tabel baru — data belajarmu yang sudah ada tetap aman.</p>
+  <p class="muted small">Sambil menunggu, semua fitur lain tetap bisa dipakai.</p>
+  <div class="row" style="justify-content:center"><a class="btn btn-primary" href="{{ url_for('pages.dashboard') }}">{{ icon('home', 16) }} Ke Markas</a><a class="btn" href="{{ url_for('pages.adventure_map') }}">{{ icon('map', 16) }} Peta Petualangan</a></div>
+</div>
+{% endblock %}

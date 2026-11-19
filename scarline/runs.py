@@ -14,7 +14,17 @@ from typing import Optional
 
 from flask import session
 
-from .content import FINAL_BANK, FINAL_TOPICS, LESSON_QUIZZES, TRAINING_BANK, TRAINING_LEVELS
+from .content import (
+    ASSESSMENTS,
+    FINAL_BANK,
+    FINAL_TOPICS,
+    LESSON_QUIZZES,
+    QUESTION_BY_ID,
+    REAL_BY_SLUG,
+    SECRET_BY_SLUG,
+    TRAINING_BANK,
+    TRAINING_LEVELS,
+)
 from .content.scar import say
 from .games import GAME_BY_SLUG
 from .grading import answer_display, grade, public_question
@@ -22,6 +32,8 @@ from .mathcore import MathInputError
 
 MAX_RUNS = 4
 POINTS_BY_TRY = {1: 100, 2: 60, 3: 30}
+EXAM_KINDS = {"final", "pretest", "posttest"}   # dijawab semua dulu, dinilai saat dikirim
+HINT_KINDS = {"secret", "reallife", "mistake"}  # petunjuk boleh dibuka siswa
 JAKARTA = timezone(timedelta(hours=7))
 
 
@@ -67,6 +79,16 @@ def build_items(run: dict) -> list:
         return [{"public": public_question(q), "q": q} for q in daily_questions(ref)]
     if kind == "final":
         return [{"public": public_question(q), "q": q} for q in final_questions(run["s"], run["n"])]
+    if kind in ("pretest", "posttest"):
+        return [{"public": public_question(q), "q": q} for q in ASSESSMENTS[kind]]
+    if kind in HINT_KINDS:
+        if kind == "secret":
+            qs = SECRET_BY_SLUG[ref]["questions"]
+        elif kind == "reallife":
+            qs = REAL_BY_SLUG[ref]["questions"]
+        else:  # mistake: ref = "<id soal asli>|<id soal serupa>"
+            qs = [QUESTION_BY_ID[ref.split("|")[1]]]
+        return [{"public": {**public_question(q), "hint": q.get("hint", "")}, "q": q} for q in qs]
     if kind == "game":
         rounds = GAME_BY_SLUG[ref].generate(Random(run["s"]), run["d"])
         return [{"public": r["public"], "round": r, "q": r.get("q")} for r in rounds]
@@ -140,7 +162,7 @@ def _grade_item(item: dict, answer, game_slug: Optional[str] = None) -> dict:
 
 
 def submit_answer(run_id: str, run: dict, index: int, answer) -> dict:
-    if run["k"] == "final":
+    if run["k"] in EXAM_KINDS:
         raise RunError("Jawaban evaluasi dikirim sekaligus saat menyelesaikan evaluasi.")
     items = build_items(run)
     if not isinstance(index, int) or not 0 <= index < len(items):
@@ -205,6 +227,8 @@ def submit_answer(run_id: str, run: dict, index: int, answer) -> dict:
         "hearts": run.get("hearts"),
         "game_over": game_over,
     }
+    if result.get("reveal"):
+        out["reveal"] = result["reveal"]
     if reveal:
         out["explain"] = result.get("explain", "")
         out["answer_display"] = result.get("answer_display", "")
@@ -220,7 +244,7 @@ def summarize(run: dict, answers: Optional[dict] = None) -> dict:
     items = build_items(run)
     duration = int(time.time() - run["t0"])
     total = len(items)
-    if run["k"] == "final":
+    if run["k"] in EXAM_KINDS:
         answers = answers or {}
         review = []
         correct = 0
@@ -231,11 +255,11 @@ def summarize(run: dict, answers: Optional[dict] = None) -> dict:
             if raw is not None and raw != "":
                 try:
                     ok = grade(q, raw)["correct"]
-                    user_txt = _user_answer_text(q, raw)
+                    user_txt = user_answer_text(q, raw)
                 except MathInputError:
                     ok, user_txt = False, "(format tidak valid)"
             correct += int(ok)
-            review.append({"index": i, "prompt": q["prompt"], "topic": q["topic"], "correct": ok, "your_answer": user_txt,
+            review.append({"index": i, "id": q["id"], "prompt": q["prompt"], "options": q.get("options"), "topic": q["topic"], "correct": ok, "your_answer": user_txt,
                            "answer_display": answer_display(q), "explain": q.get("explain", ""), "graph": q.get("graph"),
                            "type": q["type"]})
         return {"total": total, "correct": correct, "duration": duration, "review": review,
@@ -253,8 +277,10 @@ def summarize(run: dict, answers: Optional[dict] = None) -> dict:
     return out
 
 
-def _user_answer_text(q: dict, raw) -> str:
+def user_answer_text(q: dict, raw) -> str:
     try:
+        if raw is None or raw == "":
+            return "(tidak dijawab)"
         if q["type"] == "mc":
             return q["options"][int(raw)]
         if q["type"] == "tf":

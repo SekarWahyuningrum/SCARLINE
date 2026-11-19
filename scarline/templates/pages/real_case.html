@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}{{ case.title }}{% endblock %}
+{% block content %}
+<a href="{{ url_for('pages.real_life') }}" class="small">{{ icon('arrow-left', 14) }} Semua studi kasus</a>
+<span class="eyebrow" style="display:block;margin-top:10px">Real-Life Challenge · {{ case.theme }}</span>
+<h1>{{ case.title }}</h1>
+
+<div class="grid cols-2" style="align-items:start">
+  <section class="story-card glass">
+    {{ scar('explain', 90) }}
+    <div>
+      <p class="story-text">{{ case.story }}</p>
+      <div class="model-box">
+        <b>Model matematika</b>
+        <ul id="model-eqs" class="small"></ul>
+      </div>
+    </div>
+  </section>
+  <section class="sheet">
+    <h3 style="margin-top:0">Jelajahi grafiknya</h3>
+    <div id="rl-chart" class="rl-chart" data-model='{{ case.model|tojson }}'></div>
+    <div class="slider-row"><span>{{ case.model.unit_x }}</span><input type="range" id="rl-x" min="{{ case.model.slider.min }}" max="{{ case.model.slider.max }}" step="{{ case.model.slider.step }}" value="{{ case.model.slider.value }}" aria-label="{{ case.model.x_label }}"><output id="rl-xo">{{ case.model.slider.value }}</output></div>
+    <div id="rl-readout" class="rl-readout" aria-live="polite"></div>
+    <p class="small muted" style="margin:10px 0 0">{{ case.insight }}</p>
+  </section>
+</div>
+
+<section class="quiz-shell" style="margin-top:22px;max-width:none">
+  <h2>Tantangan</h2>
+  <p class="small muted">Untuk jawaban rupiah, boleh menulis <span class="math">25000</span>, <span class="math">25.000</span>, atau <span class="math">Rp25.000</span>. Tuntas jika minimal 2 dari 3 benar.{% if prog.completed %} <b>Kasus ini sudah tuntas</b> (nilai terbaik {{ prog.best_score }}).{% endif %}</p>
+  <div id="quiz-mount"></div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/plane.js') }}"></script>
+<script src="{{ url_for('static', filename='js/quiz.js') }}"></script>
+<script src="{{ url_for('static', filename='js/reallife.js') }}"></script>
+<script>
+(function () {
+  var nextUrl = {{ (url_for('pages.real_case', slug=next_case.slug) if next_case else url_for('pages.real_life'))|tojson }};
+  var runner = SC.QuizRunner(document.getElementById('quiz-mount'), {
+    kind: 'reallife', ref: {{ case.slug|tojson }},
+    noXpText: function (d) { return d.passed ? 'XP studi kasus hanya diberikan saat pertama kali tuntas.' : 'Belum tuntas — perhatikan model dan grafiknya, lalu coba lagi.'; },
+    extraActions: function () { return [SC.el('a', { class: 'btn btn-primary', href: nextUrl, text: {{ ('Kasus berikutnya →' if next_case else 'Semua studi kasus')|tojson }} })]; }
+  });
+  runner.start();
+})();
+</script>
+{% endblock %}

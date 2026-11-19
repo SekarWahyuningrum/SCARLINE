@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}Mistake Notebook{% endblock %}
+{% block content %}
+<div class="section-head">
+  <div><span class="eyebrow">Buku evaluasi pribadi</span><h1>MISTAKE NOTEBOOK</h1>
+    <p class="muted">Setiap soal yang kamu jawab salah tersimpan di sini — lengkap dengan jawabanmu, jawaban benar, pembahasan, dan rumus terkait. Kerjakan soal serupa sampai statusnya <b>Dikuasai</b>.</p></div>
+  {{ bubble('Kesalahan bukan kegagalan — itu peta harta karun menuju pemahaman!', 'encourage', 70) }}
+</div>
+
+<div class="row" style="margin-bottom:16px">
+  <a class="btn btn-sm {{ 'btn-navy' if not status }}" href="{{ url_for('pages.mistakes') }}">Semua ({{ all_count }})</a>
+  <a class="btn btn-sm {{ 'btn-navy' if status == 'perlu-latihan' }}" href="{{ url_for('pages.mistakes', status='perlu-latihan') }}">Perlu latihan ({{ open_count }})</a>
+  <a class="btn btn-sm {{ 'btn-navy' if status == 'dikuasai' }}" href="{{ url_for('pages.mistakes', status='dikuasai') }}">Dikuasai ({{ all_count - open_count }})</a>
+</div>
+
+{% if rows %}
+  <div class="mistake-list">
+    {% for m in rows %}
+      <article class="mistake notebook {{ 'mastered' if m.status == 'dikuasai' }}" id="m-{{ m.question_id }}">
+        <header class="row between">
+          <span class="row" style="gap:6px"><span class="chip">{{ topic_labels.get(m.topic, m.topic) }}</span><span class="chip chip-navy">{{ source_labels.get(m.source, m.source) }}</span>{% if m.times_wrong > 1 %}<span class="chip chip-orange">salah {{ m.times_wrong }}×</span>{% endif %}</span>
+          <span class="status {{ 'lulus' if m.status == 'dikuasai' else 'belum-lulus' }}" data-status>{{ 'Dikuasai' if m.status == 'dikuasai' else 'Perlu latihan' }}</span>
+        </header>
+        <p class="m-prompt">{{ m.prompt }}</p>
+        <div class="m-answers">
+          <div class="m-wrong"><small>Jawabanmu</small><b>{{ m.your_answer or '(tidak dijawab)' }}</b></div>
+          <div class="m-right"><small>Jawaban benar</small><b>{{ m.correct_answer }}</b></div>
+        </div>
+        <details class="m-detail">
+          <summary>Letak kesalahan & rumus terkait</summary>
+          <p><b>Pembahasan:</b> {{ m.explanation }}</p>
+          {% if formulas.get(m.topic) %}<p class="formula-note"><b>Rumus terkait:</b> <span class="mono">{{ formulas[m.topic] }}</span></p>{% endif %}
+          {% set tl = topic_lesson.get(m.topic) %}{% if tl %}<p class="small">Pelajari ulang: <a href="{{ url_for('pages.mission', slug=tl.slug) }}">Mission {{ '%02d'|format(tl.no) }} — {{ tl.region }}</a></p>{% endif %}
+        </details>
+        <div class="row">
+          <button type="button" class="btn btn-sm btn-teal" data-practice="{{ m.question_id }}">{{ icon('refresh', 14) }} {{ 'Latihan lagi' if m.status == 'dikuasai' else 'Kerjakan soal serupa' }}</button>
+          <button type="button" class="btn btn-sm btn-ghost" data-open-tutor data-tutor-context="Soal yang pernah salah: {{ m.prompt[:100] }}">{{ icon('chat', 14) }} Tanya SCAR</button>
+          <span class="small muted">Terakhir: {{ m.updated_at|datefmt }}</span>
+        </div>
+        <div class="practice-mount" data-mount="{{ m.question_id }}"></div>
+      </article>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty">
+    {{ scar('celebrate' if all_count else 'happy', 110) }}
+    <h3>{{ 'Tidak ada soal di kategori ini.' if all_count else 'Belum ada kesalahan tercatat!' }}</h3>
+    <p class="muted">Soal yang kamu jawab salah di mini quiz, latihan, tantangan harian, evaluasi, pre/post-test, Secret Mission, dan Real-Life Challenge akan otomatis muncul di sini.</p>
+    <a class="btn btn-primary" href="{{ url_for('pages.training') }}">{{ icon('target', 16) }} Ke Training Zone</a>
+  </div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/plane.js') }}"></script>
+<script src="{{ url_for('static', filename='js/quiz.js') }}"></script>
+<script>
+(function () {
+  var attempts = {};
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-practice]');
+    if (!b) return;
+    var id = b.getAttribute('data-practice');
+    var mount = document.querySelector('[data-mount="' + id + '"]');
+    attempts[id] = (attempts[id] || 0) + 1;
+    mount.innerHTML = '';
+    mount.classList.add('open');
+    var runner = SC.QuizRunner(mount, {
+      kind: 'mistake', ref: id,
+      extra: function () { return { attempt: attempts[id] }; },
+      onAnswer: function (res) {
+        if (res.mastered) {
+          var card = document.getElementById('m-' + id);
+          card.classList.add('mastered');
+          var st = card.querySelector('[data-status]'); st.textContent = 'Dikuasai'; st.className = 'status lulus';
+          SC.toast('Soal dikuasai!', 'Statusnya berubah menjadi Dikuasai.', 'celebrate');
+          SC.confetti({ count: 70 });
+        }
+      },
+      noXpText: function () { return 'Latihan Mistake Notebook tidak memberi XP, tetapi membuatmu semakin kuat!'; }
+    });
+    runner.start();
+  });
+})();
+</script>
+{% endblock %}

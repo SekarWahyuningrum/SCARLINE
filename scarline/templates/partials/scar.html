@@ -81,3 +81,9 @@
   <div class="bubble" data-scar-text>{{ text }}</div>
 </div>
 {%- endmacro %}
+
+{# Avatar siswa: SCAR dengan ekspresi & warna cincin berbeda (dipilih di Pengaturan). #}
+{% macro avatar(key='explorer', size=40) -%}
+{% set moods = {'explorer': 'welcome', 'scientist': 'explain', 'pilot': 'happy', 'artist': 'hint', 'astronaut': 'celebrate', 'detective': 'think'} %}
+<span class="avatar-ring av-{{ key if key in moods else 'explorer' }}" style="--av:{{ size }}px">{{ scar(moods.get(key, 'welcome'), (size * 0.86)|round|int, label='') }}</span>
+{%- endmacro %}

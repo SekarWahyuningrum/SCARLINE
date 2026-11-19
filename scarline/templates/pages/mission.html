@@ -11,6 +11,14 @@
       <span class="chip">+{{ lesson.xp }} XP</span>
       {% if completed %}<span class="chip chip-teal">{{ icon('check', 14) }} Misi selesai</span>{% endif %}
     </p>
+    {% if v2 %}
+    <div class="row" style="margin-top:12px">
+      <button type="button" class="btn btn-sm {{ 'btn-yellow' if bookmarked }}" data-toggle-list="bookmarks" data-slug="{{ lesson.slug }}" aria-pressed="{{ 'true' if bookmarked else 'false' }}">{{ icon('bookmark-on' if bookmarked else 'bookmark', 16) }} <span>{{ 'Ditandai' if bookmarked else 'Bookmark' }}</span></button>
+      <button type="button" class="btn btn-sm {{ 'btn-yellow' if favorite }}" data-toggle-list="favorites" data-slug="{{ lesson.slug }}" aria-pressed="{{ 'true' if favorite else 'false' }}">{{ icon('heart-on' if favorite else 'heart', 16) }} <span>{{ 'Favorit' if favorite else 'Jadikan favorit' }}</span></button>
+      <button type="button" class="btn btn-sm btn-ghost" data-open-tutor data-tutor-context="Mission {{ lesson.no }} — {{ lesson.region }}: {{ lesson.title }}">{{ icon('chat', 16) }} Tanya SCAR</button>
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('pages.visual') }}">{{ icon('eye-learn', 16) }} Mode visual</a>
+    </div>
+    {% endif %}
   </div>
   {% if completed %}<span class="stamp">Mission<br>Complete</span>{% endif %}
 </header>

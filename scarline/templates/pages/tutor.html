@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}SCAR AI Tutor{% endblock %}
+{% block content %}
+<div class="section-head">
+  <div><span class="eyebrow">Tutor pribadimu</span><h1>SCAR AI TUTOR</h1>
+    <p class="muted">Tanyakan konsep, minta petunjuk, kirim jawabanmu untuk dikoreksi, minta latihan tambahan, atau sekadar minta semangat. SCAR menjelaskan langkah demi langkah dengan bahasa yang mudah.</p></div>
+  <div class="tutor-status glass">
+    {% if ai_enabled %}<span class="chip chip-teal">{{ icon('sparkles', 14) }} AI aktif</span><p class="small muted" style="margin:6px 0 0">Jawaban dibuat oleh AI dan bisa saja keliru — selalu periksa langkahnya, ya.</p>
+    {% else %}<span class="chip">Mode tutor dasar</span><p class="small muted" style="margin:6px 0 0">SCAR menghitung gradien & persamaan dari angka yang kamu ketik, menjelaskan konsep kunci, dan memberi latihan.</p>{% endif %}
+  </div>
+</div>
+<div class="tutor-layout">
+  <div id="tutor-page" class="tutor-card glass" data-context=""></div>
+  <aside class="sheet tutor-tips">
+    <h3>Contoh pertanyaan</h3>
+    <ul class="small">
+      <li>“Apa bedanya gradien positif dan negatif?”</li>
+      <li>“Persamaan garis melalui (2, 3) dan (4, 7)”</li>
+      <li>“Gradien −1/2 melalui (4, 1)”</li>
+      <li>“Aku menjawab m = 3 untuk titik (1, 2) dan (3, 8). Benar?”</li>
+      <li>“Kenapa garis vertikal tidak punya gradien?”</li>
+    </ul>
+    <p class="small muted">Riwayat obrolan hanya tersimpan sementara di browser ini dan hilang saat tab ditutup.</p>
+    <a class="btn btn-sm" href="{{ url_for('pages.visual') }}">{{ icon('eye-learn', 14) }} Lihat animasi konsep</a>
+  </aside>
+</div>
+{% endblock %}

@@ -103,6 +103,7 @@
           if (res.hearts !== null && res.hearts !== undefined) state.hearts = res.hearts;
           if (res.tries_left !== null && res.tries_left !== undefined) state.triesLeft = res.tries_left;
           var html;
+          if (SC.sfx) SC.sfx(res.correct ? 'correct' : 'wrong');
           if (res.correct) {
             state.correct++;
             html = '<b>' + SC.esc(res.scar) + '</b><br>+' + res.points + ' poin' + (res.bonus ? ' (termasuk bonus kecepatan ' + res.bonus + ')' : '') + '.';

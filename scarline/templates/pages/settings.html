@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}Pengaturan{% endblock %}
+{% block content %}
+<span class="eyebrow">Atur pengalaman belajarmu</span>
+<h1>Pengaturan</h1>
+{% if not v2 %}<div class="notice">Pengaturan disimpan di browser ini saja. Untuk menyimpannya di akun (lintas perangkat), admin perlu menjalankan migrasi database 002.</div>{% endif %}
+<form class="settings-grid" id="settings-form" novalidate>
+  <section class="sheet">
+    <h3>{{ icon('moon', 18) }} Tampilan</h3>
+    <fieldset class="seg" role="radiogroup" aria-label="Tema">
+      {% for val, label in [('light', 'Terang'), ('dark', 'Gelap'), ('system', 'Ikuti perangkat')] %}
+        <label><input type="radio" name="theme" value="{{ val }}" {{ 'checked' if (prefs.theme or 'light') == val }}><span>{{ label }}</span></label>
+      {% endfor %}
+    </fieldset>
+    <label class="switch"><input type="checkbox" name="reduce_motion" {{ 'checked' if prefs.reduce_motion }}><span class="sw-track"></span><span>Kurangi animasi <small class="muted">(untuk kenyamanan mata & perangkat lambat)</small></span></label>
+  </section>
+  <section class="sheet">
+    <h3>{{ icon('volume', 18) }} Suara</h3>
+    <label class="switch"><input type="checkbox" name="sfx" {{ 'checked' if prefs.sfx is none or prefs.sfx }}><span class="sw-track"></span><span>Efek suara <small class="muted">(benar, salah, lencana, naik level)</small></span></label>
+    <label class="switch"><input type="checkbox" name="music" {{ 'checked' if prefs.music }}><span class="sw-track"></span><span>Musik latar <small class="muted">(melodi lembut, bisa dinyalakan dari ikon ♪ di atas)</small></span></label>
+    <button type="button" class="btn btn-sm btn-ghost" id="test-sfx">{{ icon('play', 14) }} Coba efek suara</button>
+  </section>
+  <section class="sheet" id="avatar">
+    <h3>{{ icon('user', 18) }} Avatar</h3>
+    <div class="avatar-pick" role="radiogroup" aria-label="Pilih avatar">
+      {% for a in avatars %}
+        <label title="{{ a|capitalize }}"><input type="radio" name="avatar" value="{{ a }}" {{ 'checked' if (prefs.avatar or 'explorer') == a }}>{{ avatar(a, 64) }}<span>{{ {'explorer': 'Penjelajah', 'scientist': 'Ilmuwan', 'pilot': 'Pilot', 'artist': 'Seniman', 'astronaut': 'Astronot', 'detective': 'Detektif'}[a] }}</span></label>
+      {% endfor %}
+    </div>
+  </section>
+  <section class="sheet">
+    <h3>{{ icon('bell', 18) }} Pengingat belajar</h3>
+    <p class="small muted">SCAR akan mengirim notifikasi di browser ini pada jam yang kamu pilih (selama SCARLINE terbuka di salah satu tab).</p>
+    <div class="row"><input type="time" name="reminder_time" class="input" value="{{ prefs.reminder_time or '' }}" aria-label="Jam pengingat"><button type="button" class="btn btn-sm" id="reminder-off">Matikan</button></div>
+    <p class="small" id="reminder-status" aria-live="polite"></p>
+  </section>
+  <div class="row" style="grid-column:1/-1"><button class="btn btn-primary" type="submit" id="settings-save">{{ icon('check', 16) }} Simpan pengaturan</button><span class="small" id="settings-msg" aria-live="polite"></span></div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  var f = document.getElementById('settings-form'), msg = document.getElementById('settings-msg');
+  function store(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* abaikan */ } }
+  f.querySelectorAll('input[name=theme]').forEach(function (r) { r.addEventListener('change', function () { SC.setTheme(r.value, false); }); });
+  f.elements.reduce_motion.addEventListener('change', function () { SC.setMotion(f.elements.reduce_motion.checked); });
+  document.getElementById('test-sfx').addEventListener('click', function () { store('scarline-sfx', '1'); SC.sfx('win'); });
+  var status = document.getElementById('reminder-status');
+  function showStatus() {
+    var rt = null; try { rt = localStorage.getItem('scarline-reminder'); } catch (e) { /* abaikan */ }
+    if (!window.Notification) status.textContent = 'Browser ini tidak mendukung notifikasi.';
+    else status.textContent = rt ? 'Pengingat aktif pukul ' + rt + (Notification.permission === 'granted' ? '.' : ' — izinkan notifikasi agar pengingat muncul.') : 'Pengingat belum diatur.';
+  }
+  document.getElementById('reminder-off').addEventListener('click', function () { f.elements.reminder_time.value = ''; try { localStorage.removeItem('scarline-reminder'); } catch (e) { /* abaikan */ } showStatus(); });
+  showStatus();
+  f.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var btn = document.getElementById('settings-save');
+    var theme = (f.querySelector('input[name=theme]:checked') || {}).value || 'light';
+    var avatar = (f.querySelector('input[name=avatar]:checked') || {}).value || 'explorer';
+    var rt = f.elements.reminder_time.value || null;
+    var data = { theme: theme, sfx: f.elements.sfx.checked, music: f.elements.music.checked, reduce_motion: f.elements.reduce_motion.checked, avatar: avatar, reminder_time: rt };
+    store('scarline-sfx', data.sfx ? '1' : '0'); store('scarline-music', data.music ? '1' : '0');
+    SC.setTheme(theme, false); SC.setMotion(data.reduce_motion);
+    if (data.music && !SC.music.isOn()) SC.music.start(); if (!data.music && SC.music.isOn()) SC.music.stop();
+    if (rt) { store('scarline-reminder', rt); if (window.Notification && Notification.permission === 'default') Notification.requestPermission().then(showStatus); }
+    else { try { localStorage.removeItem('scarline-reminder'); } catch (e2) { /* abaikan */ } }
+    showStatus();
+    SC.busy(btn, true, 'Menyimpan...');
+    SC.savePref(data).then(function (r) {
+      SC.busy(btn, false);
+      msg.textContent = r.ok ? 'Tersimpan!' : (r.data && r.data.error) || 'Tersimpan di browser ini.';
+      if (r.ok) { SC.sfx('correct'); setTimeout(function () { location.reload(); }, 700); }
+    });
+  });
+})();
+</script>
+{% endblock %}

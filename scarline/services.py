@@ -10,15 +10,49 @@ Aturan penting:
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+import hashlib
+import time
+from datetime import date, datetime, timedelta, timezone
 from typing import Dict, List, Optional
 
-from .content import ACHIEVEMENT_BY_SLUG, ACHIEVEMENTS, LESSON_BY_SLUG, LESSON_ORDER, level_for_xp
-from .games import DIFFICULTIES, GAME_BY_SLUG
+from .content import (
+    ACHIEVEMENT_BY_SLUG,
+    ACHIEVEMENTS,
+    ASSESSMENT_TITLES,
+    LESSON_BY_SLUG,
+    LESSON_ORDER,
+    QUESTION_BY_ID,
+    REAL_CASES,
+    SECRET_BY_SLUG,
+    SECRET_MISSIONS,
+    SECRET_ORDER,
+    SECRET_PASS,
+    TOPIC_LABELS,
+    TOPIC_LESSON,
+    V2_ACHIEVEMENTS,
+    level_for_xp,
+)
+from .games import DIFFICULTIES, GAME_BY_SLUG, V2_GAMES
 from .supabase_client import SupabaseError
 
 LESSON_PASS_SCORE = 60  # mini quiz: minimal 2 dari 3 benar
 FINAL_PASS_SCORE = 70
+MASTERY_SCORE = 70      # topik dianggap dikuasai jika ≥ 70% benar
+WIB = timezone(timedelta(hours=7))
+
+ASSESSMENT_XP = {"pretest": 30, "posttest": 50}   # sekali, saat pertama kali dikerjakan
+CHALLENGE_XP = {"secret": 50, "reallife": 40}     # sekali per misi/kasus, saat pertama kali tuntas
+AVATARS = ["explorer", "scientist", "pilot", "artist", "astronaut", "detective"]
+SOURCE_LABELS = {"lesson": "Mini quiz misi", "training": "Training Zone", "daily": "Tantangan Harian", "final": "Final Line Challenge",
+                 "pretest": "Pre-Test", "posttest": "Post-Test", "secret": "Secret Mission", "reallife": "Real-Life Challenge",
+                 "mistake": "Mistake Notebook"}
+
+_V2_CACHE: Dict[int, tuple] = {}
+
+
+def is_missing_table(exc: SupabaseError) -> bool:
+    text = str(exc).lower()
+    return exc.status == 404 or "schema cache" in text or "does not exist" in text or "pgrst205" in text
 
 
 def now_iso() -> str:
@@ -261,10 +295,26 @@ class LearningService:
             "game-explorer": len(set(best_pct) & set(GAME_BY_SLUG)) == len(GAME_BY_SLUG),
             "daily-spark": bool(daily),
             "scarline-champion": best_final >= FINAL_PASS_SCORE,
+            "graph-architect": best_pct.get("line-builder", 0) >= 70 and best_pct.get("gradient-rush", 0) >= 70,
         }
+        v2 = self.v2_ready()
+        if v2 and (V2_ACHIEVEMENTS - have):
+            pre = self.first_assessment("pretest")
+            post = self.latest_assessment("posttest")
+            challenges = self.challenge_map()
+            rules.update({
+                "coordinate-explorer": bool(pre) and "coordinate-city" in done,
+                "equation-solver": all(challenges.get(("reallife", c["slug"]), {}).get("completed") for c in REAL_CASES),
+                "line-detective": best_pct.get("line-detective", 0) >= 70,
+                "daily-streak": self.streak()["best"] >= 3,
+                "rising-line": bool(pre and post) and int(post["score"]) > int(pre["score"]),
+                "master-of-straight-lines": all(challenges.get(("secret", m["slug"]), {}).get("completed") for m in SECRET_MISSIONS),
+            })
         new = []
         for ach in ACHIEVEMENTS:
             slug = ach["slug"]
+            if slug in V2_ACHIEVEMENTS and not v2:
+                continue  # baris katalog lencana baru belum ada (migrasi 002 belum dijalankan)
             if rules.get(slug) and slug not in have:
                 inserted = self.db.upsert("user_achievements", {"user_id": self.user_id, "achievement_slug": slug},
                                           on_conflict="user_id,achievement_slug", ignore_duplicates=True)
@@ -273,6 +323,352 @@ class LearningService:
                     self.log("lencana", f"Mendapat lencana {ach['title']}", ref=slug, xp=ach["xp_bonus"], status="diperoleh")
                     new.append({"slug": slug, "title": ach["title"], "description": ach["description"], "icon": ach["icon"], "xp_bonus": ach["xp_bonus"]})
         return new
+
+    # ------------------------------------------------------------ fitur v2 (migrasi 002)
+    def v2_ready(self) -> bool:
+        """True jika tabel migrasi 002 tersedia. Hasil disimpan sebentar agar tidak membebani database."""
+        key = id(self.db)
+        hit = _V2_CACHE.get(key)
+        if hit and time.time() - hit[1] < (600 if hit[0] else 20):
+            return hit[0]
+        try:
+            self.db.select("assessment_attempts", token=None, filters={"user_id": self.user_id}, limit=1)
+            ok = True
+        except SupabaseError as exc:
+            if not is_missing_table(exc):
+                raise
+            ok = False
+        _V2_CACHE[key] = (ok, time.time())
+        return ok
+
+    def posttest_unlocked(self, summary: Optional[dict] = None) -> bool:
+        """Post-test dikerjakan SETELAH petualangan: ketujuh misi selesai dan Final Line Challenge sudah dikerjakan."""
+        summary = summary or self.summary()
+        return summary["final_unlocked"] and int(summary["stats"].get("finals_taken") or 0) > 0
+
+    # ---- streak
+    def active_days(self, limit: int = 400) -> List[date]:
+        rows = self.db.select("activity_logs", token=None, filters={"user_id": self.user_id}, order="created_at.desc", limit=limit)
+        days = set()
+        for r in rows:
+            try:
+                ts = datetime.fromisoformat(str(r["created_at"]).replace("Z", "+00:00"))
+            except (KeyError, ValueError):
+                continue
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+            days.add(ts.astimezone(WIB).date())
+        return sorted(days)
+
+    def streak(self) -> dict:
+        days = self.active_days()
+        today = datetime.now(WIB).date()
+        best = run = 0
+        prev = None
+        for d in days:
+            run = run + 1 if prev and (d - prev).days == 1 else 1
+            best = max(best, run)
+            prev = d
+        current = 0
+        day_set = set(days)
+        cursor = today if today in day_set else today - timedelta(days=1)
+        while cursor in day_set:
+            current += 1
+            cursor -= timedelta(days=1)
+        last14 = [{"date": (today - timedelta(days=i)).isoformat(), "active": (today - timedelta(days=i)) in day_set} for i in range(13, -1, -1)]
+        return {"current": current, "best": best, "today": today in day_set, "last14": last14, "total_days": len(days)}
+
+    # ---- pre-test & post-test
+    def assessments(self, kind: Optional[str] = None) -> List[dict]:
+        if not self.v2_ready():
+            return []
+        filters = {"kind": kind} if kind else {}
+        return self._mine("assessment_attempts", order="created_at.asc", **filters)
+
+    def first_assessment(self, kind: str) -> Optional[dict]:
+        rows = self._svc("assessment_attempts", kind=kind, order="created_at.asc", limit=1) if self.v2_ready() else []
+        return rows[0] if rows else None
+
+    def latest_assessment(self, kind: str) -> Optional[dict]:
+        rows = self._svc("assessment_attempts", kind=kind, order="created_at.desc", limit=1) if self.v2_ready() else []
+        return rows[0] if rows else None
+
+    @staticmethod
+    def topic_scores(review: List[dict]) -> Dict[str, dict]:
+        out: Dict[str, dict] = {}
+        for rv in review:
+            t = out.setdefault(rv["topic"], {"correct": 0, "total": 0})
+            t["total"] += 1
+            t["correct"] += int(bool(rv["correct"]))
+        return out
+
+    def record_assessment(self, kind: str, *, correct: int, total: int, duration: int, review: List[dict], answers: list) -> dict:
+        score = round(correct * 100 / total) if total else 0
+        first = self.first_assessment(kind) is None
+        xp = ASSESSMENT_XP[kind] if first else 0
+        topics = self.topic_scores(review)
+        self.db.insert("assessment_attempts", {
+            "user_id": self.user_id, "kind": kind, "score": score, "correct": correct, "total": total,
+            "duration_seconds": duration, "topic_scores": topics, "answers": answers,
+        })
+        if xp:
+            self._bump(xp)
+        self.log("asesmen", f"Mengerjakan {ASSESSMENT_TITLES[kind]}", ref=kind, score=score, xp=xp, status="selesai",
+                 meta={"correct": correct, "total": total})
+        for rv in review:
+            if not rv["correct"]:
+                self.record_mistake(rv["id"], rv.get("your_answer", ""), kind)
+        return {"score": score, "xp_awarded": xp, "first": first, "new_achievements": self.evaluate_achievements()}
+
+    def comparison(self) -> Optional[dict]:
+        """Bandingkan pre-test pertama (kemampuan awal) dengan post-test terakhir. Jujur: tidak ada klaim naik jika tidak naik."""
+        pre, post = self.first_assessment("pretest"), self.latest_assessment("posttest")
+        if not pre or not post:
+            return None
+        a, b = int(pre["score"]), int(post["score"])
+        diff = b - a
+        pct = round(diff * 100 / a, 1) if a > 0 else None
+        topics = []
+        pre_t, post_t = pre.get("topic_scores") or {}, post.get("topic_scores") or {}
+        for key, label in TOPIC_LABELS.items():
+            pa, pb = pre_t.get(key), post_t.get(key)
+            if not pa and not pb:
+                continue
+            pre_pct = round(pa["correct"] * 100 / pa["total"]) if pa else None
+            post_pct = round(pb["correct"] * 100 / pb["total"]) if pb else None
+            topics.append({"key": key, "label": label, "pre": pre_pct, "post": post_pct,
+                           "mastered": post_pct is not None and post_pct >= MASTERY_SCORE,
+                           "lesson": LESSON_BY_SLUG.get(TOPIC_LESSON.get(key, ""), {})})
+        if diff > 0:
+            verdict = f"Nilaimu naik {diff} poin, dari {a} menjadi {b}."
+        elif diff == 0:
+            verdict = f"Nilaimu sama dengan pre-test ({a}). Ulangi materi yang masih perlu ditingkatkan, lalu coba post-test lagi."
+        else:
+            verdict = f"Nilai post-test ({b}) lebih rendah {abs(diff)} poin dari pre-test ({a}). Tidak apa-apa — pelajari pembahasan dan topik yang masih perlu ditingkatkan, lalu coba lagi."
+        return {"pre": a, "post": b, "diff": diff, "percent_change": pct, "improved": diff > 0, "verdict": verdict,
+                "pre_date": pre["created_at"], "post_date": post["created_at"], "topics": topics,
+                "mastered": [t for t in topics if t["mastered"]], "needs": [t for t in topics if t["post"] is not None and not t["mastered"]]}
+
+    # ---- Mistake Notebook
+    def record_mistake(self, question_id: str, your_answer: str, source: str) -> None:
+        q = QUESTION_BY_ID.get(question_id)
+        if not q or not self.v2_ready():
+            return
+        from .grading import answer_display  # impor lokal: hindari siklus impor
+
+        existing = self._svc("mistakes", question_id=question_id, limit=1)
+        if existing:
+            self.db.update("mistakes", {"user_id": self.user_id, "question_id": question_id}, {
+                "times_wrong": int(existing[0].get("times_wrong") or 1) + 1, "status": "perlu-latihan", "mastered_at": None,
+                "your_answer": your_answer or "", "source": source, "updated_at": now_iso()})
+            return
+        self.db.upsert("mistakes", {
+            "user_id": self.user_id, "question_id": question_id, "source": source, "topic": q.get("topic", "umum"),
+            "prompt": q["prompt"], "your_answer": your_answer or "", "correct_answer": answer_display(q),
+            "explanation": q.get("explain", ""), "status": "perlu-latihan", "times_wrong": 1,
+        }, on_conflict="user_id,question_id", ignore_duplicates=True)
+
+    def mistakes(self) -> List[dict]:
+        return self._mine("mistakes", order="updated_at.desc", limit=200) if self.v2_ready() else []
+
+    def mistake(self, question_id: str) -> Optional[dict]:
+        rows = self._svc("mistakes", question_id=question_id, limit=1) if self.v2_ready() else []
+        return rows[0] if rows else None
+
+    def master_mistake(self, question_id: str) -> bool:
+        rows = self.db.update("mistakes", {"user_id": self.user_id, "question_id": question_id, "status": ("neq", "dikuasai")},
+                              {"status": "dikuasai", "mastered_at": now_iso(), "updated_at": now_iso()})
+        if rows:
+            q = QUESTION_BY_ID.get(question_id, {})
+            self.log("mistake notebook", "Menguasai kembali soal yang pernah salah", ref=question_id, status="dikuasai",
+                     meta={"topic": q.get("topic")})
+        return bool(rows)
+
+    @staticmethod
+    def similar_question(question_id: str, attempt: int = 0) -> Optional[dict]:
+        """Soal serupa: topik sama, soal berbeda. Dipilih bergiliran agar tidak selalu sama."""
+        q = QUESTION_BY_ID.get(question_id)
+        if not q:
+            return None
+        pool = sorted((c for c in QUESTION_BY_ID.values()
+                       if c["id"] != question_id and c.get("topic") == q.get("topic") and c["type"] in ("mc", "tf", "num", "point", "line")),
+                      key=lambda c: c["id"])
+        if not pool:
+            return q
+        offset = int(hashlib.sha1(question_id.encode()).hexdigest(), 16)
+        return pool[(offset + attempt) % len(pool)]
+
+    # ---- SCAR's Diary
+    def notes(self) -> List[dict]:
+        return self._mine("diary_notes", order="updated_at.desc", limit=100) if self.v2_ready() else []
+
+    def save_note(self, title: str, body: str, lesson_slug: Optional[str], note_id: Optional[str] = None) -> dict:
+        values = {"title": title, "body": body, "lesson_slug": lesson_slug or None, "updated_at": now_iso()}
+        if note_id:
+            rows = self.db.update("diary_notes", {"user_id": self.user_id, "id": note_id}, values)
+            if not rows:
+                raise SupabaseError("Catatan tidak ditemukan.", 404)
+            return rows[0]
+        rows = self.db.insert("diary_notes", {"user_id": self.user_id, **values})
+        self.log("diary", "Menulis catatan di SCAR's Diary", ref=lesson_slug, status="disimpan")
+        return rows[0] if rows else values
+
+    def delete_note(self, note_id: str) -> bool:
+        return bool(self.db.delete("diary_notes", {"user_id": self.user_id, "id": note_id}))
+
+    # ---- preferensi, bookmark, favorit
+    DEFAULT_PREFS = {"theme": "light", "music": False, "sfx": True, "reduce_motion": False, "avatar": "explorer",
+                     "bookmarks": [], "favorites": [], "reminder_time": None}
+
+    def prefs(self) -> dict:
+        if not self.v2_ready():
+            return dict(self.DEFAULT_PREFS)
+        rows = self._svc("user_preferences", limit=1)
+        return {**self.DEFAULT_PREFS, **(rows[0] if rows else {})}
+
+    def save_prefs(self, values: dict) -> dict:
+        current = self.prefs()
+        merged = {k: values.get(k, current.get(k)) for k in self.DEFAULT_PREFS}
+        merged["user_id"] = self.user_id
+        merged["updated_at"] = now_iso()
+        rows = self.db.upsert("user_preferences", merged, on_conflict="user_id")
+        return rows[0] if rows else merged
+
+    def toggle_list_pref(self, key: str, slug: str) -> bool:
+        prefs = self.prefs()
+        items = list(prefs.get(key) or [])
+        on = slug not in items
+        items = items + [slug] if on else [s for s in items if s != slug]
+        self.save_prefs({**prefs, key: items})
+        return on
+
+    # ---- Secret Mission & Real-Life Challenge
+    def challenge_map(self) -> Dict[tuple, dict]:
+        if not self.v2_ready():
+            return {}
+        return {(r["kind"], r["ref"]): r for r in self._svc("challenge_progress")}
+
+    @staticmethod
+    def secret_unlocked(slug: str, cmap: Dict[tuple, dict]) -> bool:
+        idx = SECRET_ORDER.index(slug)
+        return idx == 0 or bool(cmap.get(("secret", SECRET_ORDER[idx - 1]), {}).get("completed"))
+
+    def record_challenge(self, kind: str, ref: str, correct: int, total: int) -> dict:
+        score = round(correct * 100 / total) if total else 0
+        passed = correct >= (SECRET_PASS if kind == "secret" else total - 1)
+        existing = self._svc("challenge_progress", kind=kind, ref=ref, limit=1)
+        prev = existing[0] if existing else {}
+        first_completion = passed and not prev.get("completed")
+        xp = CHALLENGE_XP[kind] if first_completion else 0
+        values = {
+            "best_score": max(int(prev.get("best_score") or 0), score),
+            "points": max(int(prev.get("points") or 0), correct * 100),
+            "completed": bool(prev.get("completed")) or passed,
+            "attempts": int(prev.get("attempts") or 0) + 1,
+            "xp_awarded": int(prev.get("xp_awarded") or 0) + xp,
+            "updated_at": now_iso(),
+        }
+        if first_completion:
+            values["completed_at"] = now_iso()
+        if existing:
+            self.db.update("challenge_progress", {"user_id": self.user_id, "kind": kind, "ref": ref}, values)
+        else:
+            self.db.upsert("challenge_progress", {"user_id": self.user_id, "kind": kind, "ref": ref, **values},
+                           on_conflict="user_id,kind,ref")
+        if xp:
+            self._bump(xp)
+        if kind == "secret":
+            title = f"Secret Mission {SECRET_BY_SLUG[ref]['no']} — {SECRET_BY_SLUG[ref]['title']}"
+        else:
+            title = "Real-Life Challenge — " + next(c["title"] for c in REAL_CASES if c["slug"] == ref)
+        self.log("misi rahasia" if kind == "secret" else "kehidupan nyata", title, ref=ref, score=score, xp=xp,
+                 status="tuntas" if passed else "belum tuntas", meta={"points": correct * 100})
+        return {"score": score, "passed": passed, "points": correct * 100, "xp_awarded": xp, "first_completion": first_completion,
+                "new_achievements": self.evaluate_achievements()}
+
+    # ---- rekomendasi belajar
+    def topic_accuracy(self) -> Dict[str, dict]:
+        """Akurasi per topik dari semua jawaban yang benar-benar tersimpan (kuis, latihan, evaluasi, asesmen)."""
+        acc: Dict[str, dict] = {}
+
+        def add(qid, ok):
+            q = QUESTION_BY_ID.get(qid)
+            if not q:
+                return
+            t = acc.setdefault(q.get("topic", "umum"), {"correct": 0, "total": 0})
+            t["total"] += 1
+            t["correct"] += int(bool(ok))
+
+        for a in self._svc("quiz_attempts", order="created_at.desc", limit=120):
+            for item in a.get("answers") or []:
+                if isinstance(item, dict):
+                    add(item.get("id"), item.get("ok"))
+        for a in self.assessments():
+            for item in a.get("answers") or []:
+                if isinstance(item, dict):
+                    add(item.get("id"), item.get("ok"))
+        for t in acc.values():
+            t["percent"] = round(t["correct"] * 100 / t["total"]) if t["total"] else 0
+        return acc
+
+    def recommendations(self, summary: Optional[dict] = None) -> List[dict]:
+        summary = summary or self.summary()
+        recs: List[dict] = []
+        v2 = self.v2_ready()
+        if v2 and not self.first_assessment("pretest"):
+            recs.append({"icon": "target", "title": "Kerjakan Pre-Test dulu", "url": "/pretest", "cta": "Mulai Pre-Test",
+                         "text": "10 soal singkat untuk mengetahui kemampuan awalmu. Nilainya tidak mengunci materi apa pun."})
+        acc = self.topic_accuracy()
+        weak = sorted((v["percent"], k) for k, v in acc.items() if v["total"] >= 2 and v["percent"] < 60)
+        for pct, topic in weak[:2]:
+            lesson = LESSON_BY_SLUG.get(TOPIC_LESSON.get(topic, ""))
+            if lesson:
+                recs.append({"icon": lesson["icon"], "title": f"Perkuat: {TOPIC_LABELS.get(topic, topic)}",
+                             "url": f"/mission/{lesson['slug']}", "cta": f"Ulangi Mission {lesson['no']:02d}",
+                             "text": f"Akurasimu di topik ini baru {pct}%. Baca ulang materi {lesson['region']} dan coba latihannya lagi."})
+        if v2:
+            open_mistakes = [m for m in self.mistakes() if m.get("status") != "dikuasai"]
+            if open_mistakes:
+                recs.append({"icon": "book", "title": f"{len(open_mistakes)} soal menunggu di Mistake Notebook", "url": "/mistakes",
+                             "cta": "Latih soal serupa", "text": "Belajar dari kesalahan adalah jalan tercepat menjadi ahli. Kerjakan soal serupa sampai dikuasai."})
+        strong = [k for k, v in acc.items() if v["total"] >= 3 and v["percent"] >= 85]
+        nxt = summary.get("next_lesson")
+        if nxt:
+            why = f"Kamu sudah menguasai {TOPIC_LABELS.get(strong[0], strong[0])}. " if strong else ""
+            recs.append({"icon": nxt["icon"], "title": f"Lanjutkan Mission {nxt['no']:02d}: {nxt['region']}", "url": f"/mission/{nxt['slug']}",
+                         "cta": "Lanjutkan misi", "text": why + f"Materi berikutnya: {nxt['title']}."})
+        elif "scarline-champion" not in summary.get("earned", {}):
+            recs.append({"icon": "trophy", "title": "Taklukkan Final Line Challenge", "url": "/final", "cta": "Ke Final",
+                         "text": "Ketujuh misi sudah selesai. Saatnya evaluasi akhir — nilai lulus 70."})
+        elif v2 and not self.latest_assessment("posttest"):
+            recs.append({"icon": "growth", "title": "Kerjakan Post-Test", "url": "/posttest", "cta": "Mulai Post-Test",
+                         "text": "Bandingkan kemampuanmu sekarang dengan saat pre-test."})
+        else:
+            recs.append({"icon": "crown", "title": "Tantangan lanjutan", "url": "/secret", "cta": "Buka Secret Mission",
+                         "text": "Kamu sudah menguasai materi utama! Coba Secret Mission dan game tingkat Sulit untuk menjadi Master of Straight Lines."})
+        return recs[:4]
+
+    # ---- sertifikat
+    def certificate(self, summary: Optional[dict] = None) -> dict:
+        summary = summary or self.summary()
+        post = self.latest_assessment("posttest")
+        done_all = len(summary["done"]) == len(LESSON_ORDER)
+        need = []
+        if not done_all:
+            need.append(f"Selesaikan ketujuh misi ({len(summary['done'])}/7).")
+        if not post:
+            need.append("Kerjakan Post-Test.")
+        if not post or not done_all:
+            return {"eligible": False, "need": need}
+        score = int(post["score"])
+        earned = summary.get("earned", {})
+        if "master-of-straight-lines" in earned and score >= 85:
+            title = "Master of Straight Lines"
+        elif score >= FINAL_PASS_SCORE or "scarline-champion" in earned:
+            title = "SCARLINE Champion"
+        else:
+            title = "Line Explorer"
+        return {"eligible": True, "score": score, "title": title, "date": post["created_at"], "need": []}
 
     # ------------------------------------------------------------ history/dashboard
     def activity(self, limit: int = 30) -> List[dict]:

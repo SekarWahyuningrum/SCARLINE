@@ -16,7 +16,7 @@ def test_public_pages_render(client):
     for path in ("/", "/login", "/register", "/forgot-password", "/reset-password"):
         assert client.get(path).status_code == 200, path
     html = client.get("/").get_data(as_text=True)
-    assert "UNLOCK THE MYSTERY OF" in html and "MULAI PETUALANGAN" in html
+    assert "A Mathematics Learning Experience" in html and "MULAI BELAJAR" in html and "KERJAKAN PRE-TEST" in html
 
 
 @pytest.mark.parametrize("path", PRIVATE)
@@ -207,6 +207,8 @@ def solve_round(slug, run_id, index, client):
     rnd = build_items(run)[index]["round"]
     if rnd.get("q"):
         return rnd["q"]["answer"]
+    if "kind" not in rnd:  # line-detective / parallel-perpendicular
+        return rnd["answer"]
     if rnd["kind"] == "set":
         m = Fraction(rnd["m"])
         return {"rise": m.numerator, "run": m.denominator}

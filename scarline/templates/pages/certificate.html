@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Sertifikat{% endblock %}
+{% block content %}
+<span class="eyebrow">Achievement Certificate</span>
+<h1>Sertifikat SCARLINE</h1>
+{% if cert.eligible %}
+  <div class="cert-preview reveal" role="img" aria-label="Pratinjau sertifikat untuk {{ profile.full_name }}">
+    <div class="cert-band"><b>SCARLINE</b><span>A Mathematics Learning Experience</span></div>
+    <p class="cert-kicker">SERTIFIKAT PENCAPAIAN</p>
+    <p class="cert-small">Dengan bangga diberikan kepada</p>
+    <p class="cert-name">{{ profile.full_name }}</p>
+    <p class="cert-small">atas keberhasilan menuntaskan petualangan belajar</p>
+    <p class="cert-topic">Persamaan Garis Lurus — Matematika SMP Kelas VIII</p>
+    <div class="cert-boxes"><div><small>NILAI AKHIR (POST-TEST)</small><b>{{ cert.score }} / 100</b></div><div><small>GELAR PENCAPAIAN</small><b>{{ cert.title }}</b></div></div>
+    <p class="cert-date">Diterbitkan: {{ cert.date|datefmt(false) }}</p>
+    <span class="cert-seal">SCAR<small>APPROVED</small></span>
+  </div>
+  <div class="row" style="margin-top:20px;justify-content:center">
+    <a class="btn btn-primary btn-lg btn-glow" href="{{ url_for('pages.certificate_pdf') }}" download>{{ icon('download', 18) }} Unduh PDF</a>
+    <a class="btn btn-lg" href="{{ url_for('pages.progress') }}">{{ icon('growth', 18) }} Lihat perkembangan</a>
+  </div>
+  <p class="small muted center">Nilai akhir diambil dari post-test terakhirmu. Kerjakan post-test lagi untuk memperbarui sertifikat.</p>
+{% else %}
+  <div class="empty" style="max-width:640px;margin:20px auto">
+    {{ scar('hint', 110) }}
+    <h3>Sertifikat belum tersedia</h3>
+    <p>Sertifikat diberikan setelah kamu menuntaskan petualangan:</p>
+    <ul class="checklist" style="text-align:left;display:inline-block">{% for n in cert.need %}<li>{{ n }}</li>{% endfor %}</ul>
+    <div class="row" style="justify-content:center"><a class="btn btn-primary" href="{{ url_for('pages.adventure_map') }}">{{ icon('map', 16) }} Lanjutkan petualangan</a></div>
+  </div>
+{% endif %}
+{% endblock %}

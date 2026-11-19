@@ -1,60 +1,64 @@
 {% extends 'base.html' %}
-{% block title %}Straight Line Adventure Map{% endblock %}
-{% set pos = [(9,76),(23,40),(38,18),(47,62),(62,36),(75,72),(88,44),(91,12)] %}
+{% block title %}Adventure Learning Map{% endblock %}
 {% block content %}
+{# Dua belas perhentian: Welcome → Pre-Test → 7 wilayah → Final → Post-Test → Champion #}
+{% set pos = [(5,80),(14,50),(22,20),(33,46),(40,80),(51,52),(58,20),(69,44),(75,78),(85,52),(90,22),(96,78)] %}
+{% set J = journey %}
+{% set nodes = [] %}
+{% if nodes.append({'key': 'welcome', 'no': 'START', 'name': 'Welcome to SCARLINE', 'topic': 'Markas SCAR', 'icon': 'compass', 'url': url_for('pages.dashboard'), 'state': 'done', 'kind': 'gate'}) %}{% endif %}
+{% if nodes.append({'key': 'pretest', 'no': 'TES', 'name': 'Pre-Test', 'topic': ('Nilai awal: ' ~ J.pretest_score) if J.pretest_done else 'Kenali kemampuan awal', 'icon': 'flag', 'url': url_for('pages.pretest'), 'state': 'done' if J.pretest_done else 'current', 'kind': 'gate'}) %}{% endif %}
+{% set ns = namespace(current=None) %}
+{% for l in lessons %}
+  {% set done = l.slug in summary.done %}
+  {% set unlocked = loop.first or lessons[loop.index0 - 1].slug in summary.done %}
+  {% set st = 'done' if done else ('current' if unlocked and ns.current is none else ('open' if unlocked else 'locked')) %}
+  {% if st == 'current' %}{% set ns.current = l.slug %}{% endif %}
+  {% if nodes.append({'key': l.slug, 'no': 'M' ~ '%02d'|format(l.no), 'name': l.region, 'topic': l.title, 'icon': l.icon, 'url': url_for('pages.mission', slug=l.slug), 'state': st, 'kind': 'island isl-' ~ l.no, 'lock_hint': 'Selesaikan Mission ' ~ '%02d'|format(l.no - 1) ~ ' untuk membuka'}) %}{% endif %}
+{% endfor %}
+{% set champ = summary.earned.get('scarline-champion') %}
+{% if nodes.append({'key': 'final', 'no': 'FINAL', 'name': 'Final Line Challenge', 'topic': 'Evaluasi akhir', 'icon': 'trophy', 'url': url_for('pages.final'), 'state': 'done' if champ else ('current' if summary.final_unlocked else 'locked'), 'kind': 'portal-node', 'lock_hint': 'Selesaikan ketujuh misi untuk membuka'}) %}{% endif %}
+{% if nodes.append({'key': 'posttest', 'no': 'TES', 'name': 'Post-Test', 'topic': ('Nilai akhir: ' ~ J.posttest_score) if J.posttest_done else 'Ukur perkembanganmu', 'icon': 'growth', 'url': url_for('pages.posttest'), 'state': 'done' if J.posttest_done else ('current' if J.posttest_unlocked else 'locked'), 'kind': 'gate', 'lock_hint': 'Terbuka setelah Final Line Challenge dikerjakan'}) %}{% endif %}
+{% if nodes.append({'key': 'champion', 'no': 'GELAR', 'name': 'SCARLINE Champion', 'topic': 'Sertifikat & gelar', 'icon': 'crown', 'url': url_for('pages.certificate'), 'state': 'done' if J.champion else 'locked', 'kind': 'crown-node', 'lock_hint': 'Selesaikan misi & post-test untuk meraih gelar'}) %}{% endif %}
+{% set done_count = nodes|selectattr('state', 'equalto', 'done')|list|length %}
+{% set ns2 = namespace(cur=None, walked=0) %}
+{% for n in nodes %}{% if n.state == 'done' %}{% set ns2.walked = loop.index0 %}{% endif %}{% if ns2.cur is none and n.state == 'current' and n.key != 'pretest' %}{% set ns2.cur = loop.index0 %}{% endif %}{% endfor %}
+
 <div class="section-head">
   <div>
-    <span class="eyebrow">Pusat navigasi pembelajaran</span>
-    <h1>STRAIGHT LINE ADVENTURE MAP</h1>
-    <p class="muted">Selesaikan setiap wilayah untuk membuka wilayah berikutnya. Wilayah yang sudah terbuka boleh dijelajahi ulang kapan saja.</p>
+    <span class="eyebrow">Adventure Learning Map</span>
+    <h1>SCARLINE WORLD</h1>
+    <p class="muted">Dua belas perhentian dari markas SCAR sampai gelar SCARLINE Champion. Wilayah bercahaya adalah tujuan berikutnya; wilayah yang sudah terbuka boleh dijelajahi ulang kapan saja.</p>
   </div>
-  {{ bubble('Wilayah berwarna oranye adalah tujuan berikutnya. Ayo berangkat!', 'explain', 70) }}
+  {{ bubble('Ikuti jalur bercahaya! ' ~ ('Mulai dengan pre-test untuk mengenali kemampuan awalmu.' if not J.pretest_done and J.v2 else 'Aku menunggumu di wilayah berikutnya.'), 'explain', 70) }}
 </div>
 
-{% set ns = namespace(current=None, walked=0) %}
-{% for l in lessons %}
-  {% set unlocked = loop.first or lessons[loop.index0 - 1].slug in summary.done %}
-  {% if unlocked and l.slug not in summary.done and ns.current is none %}{% set ns.current = loop.index0 %}{% endif %}
-  {% if l.slug in summary.done %}{% set ns.walked = loop.index %}{% endif %}
-{% endfor %}
-{% if ns.current is none %}{% set ns.current = 7 %}{% endif %}
+<div class="journey-progress glass">
+  <div><b>{{ done_count }}</b> / {{ nodes|length }} perhentian</div>
+  <div class="ruler teal" style="flex:1"><div class="fill" style="width:{{ (done_count * 100 / nodes|length)|round|int }}%"></div></div>
+  <div class="small muted">{{ summary.done|length }}/7 misi · {{ summary.percent }}%</div>
+</div>
 
-<div class="world" role="list" aria-label="Wilayah SCARLINE WORLD">
+<div class="world world-12" role="list" aria-label="Perhentian SCARLINE WORLD" data-map>
   <svg class="trail" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
     <path d="M{% for p in pos %}{{ p[0] }} {{ p[1] }}{% if not loop.last %} L{% endif %}{% endfor %}" vector-effect="non-scaling-stroke"/>
-    {% if ns.walked > 0 %}
-    <path class="walked" d="M{% for p in pos[:ns.walked + 1] %}{{ p[0] }} {{ p[1] }}{% if not loop.last %} L{% endif %}{% endfor %}" vector-effect="non-scaling-stroke"/>
-    {% endif %}
+    {% if ns2.walked > 0 %}<path class="walked" d="M{% for p in pos[:ns2.walked + 1] %}{{ p[0] }} {{ p[1] }}{% if not loop.last %} L{% endif %}{% endfor %}" vector-effect="non-scaling-stroke"/>{% endif %}
   </svg>
-
-  {% for l in lessons %}
-    {% set done = l.slug in summary.done %}
-    {% set unlocked = loop.first or lessons[loop.index0 - 1].slug in summary.done %}
-    {% set state = 'done' if done else ('current' if loop.index0 == ns.current else ('open' if unlocked else 'locked')) %}
-    {% if unlocked %}
-    <a role="listitem" class="region {{ state }}" style="left:{{ pos[loop.index0][0] }}%;top:{{ pos[loop.index0][1] }}%" href="{{ url_for('pages.mission', slug=l.slug) }}" aria-label="Mission {{ l.no }}: {{ l.region }} — {{ 'selesai' if done else 'terbuka' }}">
+  <span class="map-cloud c1" aria-hidden="true"></span><span class="map-cloud c2" aria-hidden="true"></span><span class="map-cloud c3" aria-hidden="true"></span>
+  {% for n in nodes %}
+    {% set p = pos[loop.index0] %}
+    {% set cls = 'region ' ~ n.state ~ ' ' ~ n.kind %}
+    {% if n.state != 'locked' %}
+    <a role="listitem" class="{{ cls }}" data-node="{{ n.key }}" style="left:{{ p[0] }}%;top:{{ p[1] }}%" href="{{ n.url }}" aria-label="{{ loop.index }}. {{ n.name }} — {{ {'done': 'selesai', 'current': 'tujuan berikutnya', 'open': 'terbuka'}[n.state] }}">
     {% else %}
-    <div role="listitem" class="region locked" style="left:{{ pos[loop.index0][0] }}%;top:{{ pos[loop.index0][1] }}%" aria-label="Mission {{ l.no }}: {{ l.region }} — terkunci" title="Selesaikan Mission {{ '%02d'|format(l.no - 1) }} untuk membuka">
+    <div role="listitem" class="{{ cls }}" data-node="{{ n.key }}" style="left:{{ p[0] }}%;top:{{ p[1] }}%" aria-label="{{ loop.index }}. {{ n.name }} — terkunci" title="{{ n.lock_hint }}">
     {% endif %}
-      <span class="disc"><span class="no">M{{ '%02d'|format(l.no) }}</span>{{ icon(l.icon if unlocked else 'lock', 34) }}{% if done %}<span class="flag">{{ icon('check', 16) }}</span>{% endif %}</span>
-      <span class="name">{{ l.region }}</span>
-      <span class="topic">{{ l.title }}</span>
-    {% if unlocked %}</a>{% else %}</div>{% endif %}
+      <span class="disc"><span class="no">{{ n.no }}</span>{{ icon(n.icon if n.state != 'locked' else 'lock', 32) }}{% if n.state == 'done' %}<span class="flag">{{ icon('check', 16) }}</span>{% endif %}</span>
+      <span class="name">{{ n.name }}</span>
+      <span class="topic">{{ n.topic }}</span>
+    {% if n.state != 'locked' %}</a>{% else %}</div>{% endif %}
   {% endfor %}
-
-  {% set fin = summary.earned.get('scarline-champion') %}
-  {% if summary.final_unlocked %}
-  <a role="listitem" class="region final {{ 'done' if fin else 'current' }}" style="left:{{ pos[7][0] }}%;top:{{ pos[7][1] }}%" href="{{ url_for('pages.final') }}">
-  {% else %}
-  <div role="listitem" class="region final locked" style="left:{{ pos[7][0] }}%;top:{{ pos[7][1] }}%" title="Selesaikan ketujuh misi untuk membuka">
-  {% endif %}
-    <span class="disc"><span class="no">FINAL</span>{{ icon('trophy' if summary.final_unlocked else 'lock', 38) }}{% if fin %}<span class="flag">{{ icon('star', 16) }}</span>{% endif %}</span>
-    <span class="name">Final Mission</span>
-    <span class="topic">Final Line Challenge</span>
-  {% if summary.final_unlocked %}</a>{% else %}</div>{% endif %}
-
-  {% if ns.current < 7 %}
-  <div class="world-scar" style="left:{{ pos[ns.current][0] + 5 }}%;top:{{ pos[ns.current][1] - 6 }}%">{{ scar('hint', 58) }}</div>
+  {% if ns2.cur is not none %}
+  <div class="world-scar walker" style="left:{{ pos[ns2.cur][0] + 4 }}%;top:{{ pos[ns2.cur][1] - 7 }}%">{{ scar('hint', 56, cls='scar-walk') }}</div>
   {% endif %}
   <svg class="compass-rose" viewBox="0 0 100 100" aria-hidden="true">
     <circle cx="50" cy="50" r="44" fill="#FFFDF7" stroke="#25334A" stroke-width="4"/>
@@ -66,10 +70,34 @@
 </div>
 <div class="map-legend">
   <span><i style="background:var(--teal)"></i> Selesai</span>
-  <span><i style="background:var(--orange)"></i> Tujuan berikutnya</span>
+  <span><i class="glow-dot" style="background:var(--orange)"></i> Tujuan berikutnya</span>
   <span><i style="background:var(--paper)"></i> Terbuka</span>
-  <span><i style="background:#D9CDB8"></i> Terkunci</span>
-  <span class="spacer"></span>
-  <span>Progres: <b>&nbsp;{{ summary.done|length }}/7 misi ({{ summary.percent }}%)</b></span>
+  <span><i class="locked-dot"></i> Terkunci</span>
 </div>
+{% endblock %}
+{% block scripts %}
+<script>
+/* Animasi membuka wilayah baru: bandingkan dengan kunjungan sebelumnya. */
+(function () {
+  var nodes = document.querySelectorAll('[data-map] .region');
+  var open = [];
+  nodes.forEach(function (n) { if (!n.classList.contains('locked')) open.push(n.getAttribute('data-node')); });
+  var prev = null;
+  var who = document.querySelector('.user-chip .who'), key = 'scarline-map-open-' + (who ? who.textContent.trim() : '');
+  try { prev = JSON.parse(localStorage.getItem(key) || 'null'); localStorage.setItem(key, JSON.stringify(open)); } catch (e) { prev = null; }
+  if (!prev) return;
+  var fresh = open.filter(function (k) { return prev.indexOf(k) < 0; });
+  if (!fresh.length) return;
+  fresh.forEach(function (k, i) {
+    var n = document.querySelector('[data-node="' + k + '"]');
+    if (n) setTimeout(function () { n.classList.add('just-unlocked'); }, 400 + i * 250);
+  });
+  setTimeout(function () {
+    SC.sfx('badge');
+    var first = document.querySelector('[data-node="' + fresh[0] + '"] .name');
+    SC.toast(fresh.length > 1 ? fresh.length + ' wilayah baru terbuka!' : 'Wilayah baru terbuka!',
+      fresh.length > 1 ? 'Jelajahi wilayah-wilayah yang baru bercahaya di peta.' : (first ? first.textContent : 'Wilayah') + ' siap dijelajahi.', 'celebrate');
+  }, 500);
+})();
+</script>
 {% endblock %}

@@ -6,18 +6,37 @@ jawaban dinilai. Setiap jawaban salah mendapat umpan balik spesifik dari SCAR
 """
 from __future__ import annotations
 
+import re
 from fractions import Fraction
 from typing import Any
 
 from .mathcore import MathInputError, fmt, fmt_point, is_decimal_text, slope_intercept, to_frac
 
-PUBLIC_KEYS = ("id", "type", "topic", "prompt", "options", "graph", "range", "items")
+PUBLIC_KEYS = ("id", "type", "topic", "prompt", "options", "graph", "range", "items", "money", "level")
 
 GENERIC_DIAGNOSE = {
     "sign": "Tanda jawabanmu terbalik (positif ↔ negatif). Periksa urutan pengurangan: (y₂ − y₁) dan (x₂ − x₁) harus dimulai dari titik yang sama.",
     "flip": "Sepertinya pembilang dan penyebutnya tertukar. Gradien = Δy ÷ Δx (perubahan tegak dibagi perubahan mendatar).",
     "flip_sign": "Angkanya terbalik DAN tandanya juga terbalik. Ulangi pelan-pelan: m = (y₂ − y₁)/(x₂ − x₁).",
 }
+
+
+_MONEY_RE = re.compile(r"^\d{1,3}(\.\d{3})+(,\d+)?$")
+
+
+def normalize_money(raw: Any) -> Any:
+    """Terima penulisan rupiah: "Rp25.000", "25.000", "25 000" → "25000"."""
+    if not isinstance(raw, str):
+        return raw
+    s = raw.strip().lower().replace("rp", "").replace(" ", "").replace(" ", "")
+    if _MONEY_RE.match(s):
+        s = s.replace(".", "")
+    return s
+
+
+def rupiah(value: Fraction) -> str:
+    whole = int(value) if value.denominator == 1 else float(value)
+    return "Rp" + f"{whole:,}".replace(",", ".")
 
 
 def public_question(q: dict) -> dict:
@@ -32,7 +51,7 @@ def answer_display(q: dict) -> str:
     if t == "tf":
         return "Benar" if a else "Salah"
     if t == "num":
-        return fmt(to_frac(a))
+        return rupiah(to_frac(a)) if q.get("money") else fmt(to_frac(a))
     if t == "point":
         return fmt_point(a)
     if t == "line":
@@ -103,6 +122,8 @@ def grade(q: dict, answer: Any) -> dict:
             feedback = q.get("hint", "Periksa kembali pernyataannya.")
 
     elif t == "num":
+        if q.get("money"):
+            answer = normalize_money(answer)
         user = to_frac(answer)
         expected = to_frac(q["answer"])
         correct = _num_equal(answer, user, expected)

@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Real-Life Mathematics Challenge{% endblock %}
+{% block content %}
+<div class="section-head">
+  <div><span class="eyebrow">Matematika di sekitar kita</span><h1>REAL-LIFE MATHEMATICS CHALLENGE</h1>
+    <p class="muted">Lima studi kasus nyata: ongkos perjalanan, tarif internet, tabungan, pertumbuhan tanaman, dan belanja. Jelajahi grafiknya dengan slider, lalu selesaikan tantangannya.</p></div>
+  {{ bubble('Persamaan garis lurus ada di mana-mana — bahkan di dompetmu!', 'happy', 70) }}
+</div>
+<div class="case-grid">
+  {% for c in cases %}
+    {% set p = progress[c.slug] %}
+    <a class="case-card glass reveal" href="{{ url_for('pages.real_case', slug=c.slug) }}">
+      <span class="case-ic">{{ icon(c.icon, 28) }}</span>
+      <span class="small muted">Kasus {{ loop.index }} · {{ c.theme }}</span>
+      <h3>{{ c.title }}</h3>
+      <p class="small">{{ c.story[:120] }}{{ '…' if c.story|length > 120 }}</p>
+      <div class="row between" style="margin-top:auto">
+        {% if p.completed %}<span class="chip chip-teal">{{ icon('check', 12) }} Tuntas · {{ p.best_score }}</span>{% elif p.attempts %}<span class="chip chip-orange">Terbaik {{ p.best_score }}</span>{% else %}<span class="chip">Belum dicoba</span>{% endif %}
+        <span class="btn btn-sm btn-primary">Mulai {{ icon('play', 12) }}</span>
+      </div>
+    </a>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -4,8 +4,15 @@
 {% set st = summary.stats %}
 {% block content %}
 <span class="eyebrow">SCAR's Mathematics Headquarters</span>
+{% if v2 and not journey.pretest_done %}
+<div class="banner glass reveal">
+  {{ scar('hint', 64) }}
+  <div><b>Langkah pertama: kerjakan Pre-Test!</b><span class="small muted">10 soal untuk mengenali kemampuan awalmu. Nilainya tidak mengunci materi apa pun.</span></div>
+  <a class="btn btn-primary btn-sm" href="{{ url_for('pages.pretest') }}">Mulai Pre-Test {{ icon('arrow-right', 14) }}</a>
+</div>
+{% endif %}
 <section class="paper hq-hero tape">
-  {{ scar('welcome', 130, cls='idle-bob') }}
+  {{ scar('welcome', 130, cls='idle-bob scar-wave-once') }}
   <div>
     <h1>Halo, {{ profile.full_name.split(' ')[0] }}!</h1>
     <p style="margin-bottom:10px"><span class="chip chip-navy">@{{ profile.username }}</span> <span class="chip">Kelas {{ profile.class_name }}</span> <span class="chip chip-orange">{{ lv.name }}</span></p>
@@ -21,10 +28,30 @@
   </div>
 </section>
 
+<section class="grid cols-2 dash-row" style="margin-top:22px">
+  <div class="sheet streak-card reveal">
+    <div class="row between"><h3 style="margin:0">{{ icon('flame', 20) }} Learning Streak</h3><span class="chip {{ 'chip-orange' if streak.today else '' }}">{{ 'Aktif hari ini' if streak.today else 'Belum belajar hari ini' }}</span></div>
+    <p class="streak-num"><b data-count="{{ streak.current }}">{{ streak.current }}</b> hari berturut-turut <span class="small muted">· rekor {{ streak.best }} hari</span></p>
+    <ol class="streak-days" aria-label="Aktivitas 14 hari terakhir">
+      {% for d in streak.last14 %}<li class="{{ 'on' if d.active }}" title="{{ d.date }}: {{ 'belajar' if d.active else 'tidak ada aktivitas' }}"><span class="sr">{{ d.date }} {{ 'aktif' if d.active else 'tidak aktif' }}</span></li>{% endfor %}
+    </ol>
+    <p class="small muted" style="margin:6px 0 0">{% if streak.today %}Mantap! Kembali besok untuk menjaga streak-mu.{% else %}Selesaikan satu aktivitas (misalnya Tantangan Harian) untuk menyalakan streak hari ini.{% endif %}</p>
+  </div>
+  <div class="sheet recs reveal">
+    <div class="row between"><h3 style="margin:0">{{ icon('sparkles', 20) }} Rekomendasi SCAR untukmu</h3>{% if v2 %}<a class="small" href="{{ url_for('pages.progress') }}">Perkembangan →</a>{% endif %}</div>
+    <ul class="rec-list">
+      {% for r in recs %}
+        <li><span class="ic">{{ icon(r.icon, 20) }}</span><div><b>{{ r.title }}</b><span class="small muted">{{ r.text }}</span></div><a class="btn btn-sm" href="{{ r.url }}">{{ r.cta }}</a></li>
+      {% endfor %}
+    </ul>
+    <p class="small muted" style="margin:8px 0 0">Rekomendasi dihitung dari jawaban yang benar-benar tersimpan di akunmu.</p>
+  </div>
+</section>
+
 <section class="instrument" style="margin-top:22px" aria-label="Statistik belajar">
   <div><span>Total XP</span><b>{{ lv.xp }}</b><small class="muted">{% if lv.next %}{{ lv.to_next }} XP lagi ke Level {{ lv.level + 1 }}{% else %}Level maksimal!{% endif %}</small></div>
   <div><span>Progres belajar</span><b>{{ summary.percent }}%</b><small class="muted">{{ summary.done|length }} dari 7 misi selesai</small></div>
-  <div><span>Permainan dimainkan</span><b>{{ st.games_played or 0 }}</b><small class="muted">{{ summary.games_finished }} dari 5 jenis game</small></div>
+  <div><span>Permainan dimainkan</span><b>{{ st.games_played or 0 }}</b><small class="muted">{{ summary.games_finished }} dari {{ games_total }} jenis game</small></div>
   <div><span>Lencana</span><b>{{ summary.earned|length }}</b><small class="muted">dari {{ summary.achievements|length }} lencana</small></div>
 </section>
 
@@ -82,7 +109,13 @@
     <a class="action hot" href="{{ url_for('pages.mission', slug=summary.next_lesson.slug) if summary.next_lesson else url_for('pages.adventure_map') }}"><span class="ic">{{ icon('play', 20) }}</span><span>Continue Learning<small>Lanjutkan misi berikutnya</small></span></a>
     <a class="action" href="{{ url_for('pages.adventure_map') }}"><span class="ic">{{ icon('map', 20) }}</span><span>Explore Coordinate World<small>Peta 7 wilayah</small></span></a>
     <a class="action cool" href="{{ url_for('pages.lab') }}"><span class="ic">{{ icon('lab', 20) }}</span><span>Open Laboratory<small>Simulasi & kalkulator</small></span></a>
-    <a class="action" href="{{ url_for('pages.playground') }}"><span class="ic">{{ icon('gamepad', 20) }}</span><span>Play Games<small>5 game edukatif</small></span></a>
+    <a class="action" href="{{ url_for('pages.playground') }}"><span class="ic">{{ icon('gamepad', 20) }}</span><span>Play Games<small>{{ games_total }} game edukatif</small></span></a>
+    <a class="action cool" href="{{ url_for('pages.visual') }}"><span class="ic">{{ icon('eye-learn', 20) }}</span><span>Visual Learning<small>Animasi konsep</small></span></a>
+    <a class="action" href="{{ url_for('pages.secret') }}"><span class="ic">{{ icon('key', 20) }}</span><span>Secret Mission<small>Misi rahasia SCAR</small></span></a>
+    <a class="action" href="{{ url_for('pages.real_life') }}"><span class="ic">{{ icon('bike', 20) }}</span><span>Real-Life Challenge<small>Matematika sehari-hari</small></span></a>
+    <a class="action hot" href="{{ url_for('pages.tutor_page') }}"><span class="ic">{{ icon('chat', 20) }}</span><span>SCAR AI Tutor<small>Tanya kapan saja</small></span></a>
+    <a class="action" href="{{ url_for('pages.mistakes') }}"><span class="ic">{{ icon('book', 20) }}</span><span>Mistake Notebook<small>Belajar dari kesalahan</small></span></a>
+    <a class="action" href="{{ url_for('pages.diary') }}"><span class="ic">{{ icon('note', 20) }}</span><span>SCAR's Diary<small>Catatan & rumus</small></span></a>
     <a class="action gold" href="{{ url_for('pages.final') }}"><span class="ic">{{ icon('trophy', 20) }}</span><span>Take Final Challenge<small>{{ 'Terbuka!' if summary.final_unlocked else 'Selesaikan 7 misi dulu' }}</small></span></a>
     <a class="action" href="{{ url_for('pages.achievements') }}"><span class="ic">{{ icon('award', 20) }}</span><span>View Achievements<small>{{ summary.earned|length }} lencana diperoleh</small></span></a>
   </div>

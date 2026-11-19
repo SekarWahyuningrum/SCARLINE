@@ -1,15 +1,17 @@
-# SCARLINE — Discover the Line, Master the Equation!
+# SCARLINE — A Mathematics Learning Experience
 
-**SCARLINE** adalah platform pembelajaran matematika interaktif untuk siswa **SMP kelas VIII** dengan materi utama **Persamaan Garis Lurus**. Siswa menjelajahi *SCARLINE WORLD* bersama maskot **SCAR**: membuka 7 wilayah misi, bereksperimen di Coordinate Laboratory, berlatih di Training Zone, bermain 5 game edukatif, lalu menuntaskan Final Line Challenge.
+**SCARLINE** adalah platform pembelajaran matematika interaktif untuk siswa **SMP kelas VIII** dengan materi utama **Persamaan Garis Lurus**. Siswa menjelajahi *SCARLINE WORLD* bersama maskot **SCAR** melalui 12 perhentian: pre-test, 7 wilayah misi, Final Line Challenge, post-test, sampai gelar **SCARLINE Champion** dan sertifikat. Tersedia Graph Laboratory, Visual Learning Mode, SCAR AI Tutor, 7 game edukatif, Secret Mission, Real-Life Challenge, Mistake Notebook, SCAR's Diary, daily streak, dark mode, dan musik latar.
+
+Dibuat oleh **Sekar Wahyuningrum** — Universitas Sultan Ageng Tirtayasa.
 
 Tema visual: **Vintage Mathematics Laboratory** — kertas grafik, buku catatan, papan tulis, dan stempel retro.
 
 | Lapisan | Teknologi |
 |---|---|
-| Backend | **Python 3.11+**, Flask 3, requests |
+| Backend | **Python 3.11+**, Flask 3, requests, SDK `anthropic` (AI Tutor, opsional) |
 | Frontend | **JavaScript** (ES2017, tanpa framework), SVG, CSS |
 | Autentikasi & database | Supabase Auth, PostgreSQL, Row Level Security |
-| Pengujian | pytest (175 test), esprima (cek sintaks JS) |
+| Pengujian | pytest (288 test), esprima (cek sintaks JS), uji browser Edge headless |
 | Deployment | Vercel (runtime Python) |
 
 > Repo ini sengaja memakai **Python + JavaScript**. File `.gitattributes` mengecualikan HTML/CSS/SQL dari statistik bahasa GitHub, sehingga bilah bahasa repo menampilkan **Python** dan **JavaScript**.
@@ -69,7 +71,27 @@ Tema visual: **Vintage Mathematics Laboratory** — kertas grafik, buku catatan,
 
 **Final Line Challenge** — 10/15/20/25 soal dipilih berimbang dari 8 topik, timer opsional, navigasi nomor soal, tandai ragu-ragu, tinjau sebelum kirim, kunci tidak dikirim selama evaluasi, pembahasan setelah selesai, riwayat tersimpan.
 
-**Gamifikasi** — XP, 7 level, 9 lencana (notifikasi toast), bintang 1–3, progres misi, tantangan harian. **Profil** (data akun, statistik, edit nama/kelas) dan **Riwayat** (log aktivitas dengan filter, nilai latihan/evaluasi, hasil game).
+### Fitur tambahan (versi 2)
+
+| Fitur | Keterangan |
+|---|---|
+| **Landing page baru** | Animasi pembuka SCAR, judul beranimasi, gradient & dekorasi matematika melayang, statistik, tujuan pembelajaran, pratinjau 12 perhentian, dan **identitas pembuat** di bagian paling bawah. |
+| **Pre-test** (10 soal) | Bisa dikerjakan langsung di halaman pertama atau `/pretest`. Indikator nomor soal, progres, nilai, benar/salah, kunci & pembahasan. **Tidak** mengunci materi. |
+| **Post-test** (15 soal berbeda) | Terbuka setelah 7 misi selesai dan Final dikerjakan. Perbandingan jujur dengan pre-test: nilai awal/akhir, selisih, persentase (tidak dihitung jika pre-test 0), materi dikuasai & perlu ditingkatkan, grafik. |
+| **Adventure Map 12 perhentian** | Welcome → Pre-Test → 7 wilayah (pulau berbeda) → Final (portal) → Post-Test → Champion. Wilayah terkunci, selesai, bercahaya, dan animasi wilayah baru terbuka. |
+| **Visual Learning Mode** | 9 animasi (titik, pembentukan garis, perubahan gradien, positif/negatif, horizontal/vertikal, perubahan c, sejajar, tegak lurus, animasi rumus) dengan putar/jeda/geser/per langkah. |
+| **SCAR AI Tutor** | Panel melayang di semua halaman + halaman `/tutor`. Mode: tanya, petunjuk, koreksi, latihan, ulang materi, motivasi. Memakai Claude (server) bila `ANTHROPIC_API_KEY` diisi; tanpa kunci memakai tutor dasar lokal. |
+| **7 game** | Tambahan **Line Detective** (klik garis tersangka di grafik) dan **Parallel or Perpendicular?** (seret kartu ke portal). |
+| **SCAR's Secret Mission** | 6 misi bercerita berurutan, poin, petunjuk, tanpa batas waktu, gelar **Master of Straight Lines**. |
+| **Real-Life Challenge** | 5 studi kasus (ojek, paket internet, tabungan, pertumbuhan, belanja) dengan grafik + slider; jawaban rupiah fleksibel (`25000`/`25.000`/`Rp25.000`). |
+| **Mistake Notebook** | Semua jawaban salah tersimpan: jawabanmu, kunci, pembahasan, rumus terkait, soal serupa, status *perlu latihan → dikuasai*. |
+| **SCAR's Diary** | Buku bertab: catatan pribadi (tambah/edit/hapus), materi dipelajari, kartu rumus (flip), favorit & bookmark, misi selesai, pencapaian, rangkuman. |
+| **Smart Recommendation** | Dihitung dari akurasi per topik yang tersimpan + Mistake Notebook + posisi petualangan. |
+| **Profil & Grafik Perkembangan** | Avatar, XP, level, persentase penyelesaian, streak, pre/post-test, grafik, riwayat misi & game. |
+| **Sertifikat PDF** | Nama, SCARLINE, materi, nilai akhir, tanggal, gelar; dibuat server (tanpa pustaka tambahan). |
+| **Kenyamanan** | Dark mode, efek suara & musik latar (WebAudio, tanpa file), kurangi animasi, pencarian materi (Ctrl+K), bookmark, pengingat belajar, loading screen, confetti, animasi naik level & lencana, tombol kembali ke atas. |
+
+**Gamifikasi** — XP, 7 level, 16 lencana (notifikasi toast), bintang 1–3, progres misi, tantangan harian. **Profil** (data akun, statistik, edit nama/kelas) dan **Riwayat** (log aktivitas dengan filter, nilai latihan/evaluasi, hasil game).
 
 ---
 
@@ -156,7 +178,10 @@ Buka **http://localhost:5000**. Tanpa kredensial Supabase, halaman publik tetap 
 
 1. Buka **SQL Editor** di dashboard Supabase.
 2. Jalankan isi `supabase/migrations/001_scarline_schema.sql` (membuat 13 tabel, trigger profil otomatis, dan seluruh kebijakan RLS).
-3. Jalankan isi `supabase/seed.sql` (7 misi, 12 kuis, 82 soal, 5 game, 9 lencana).
+3. Jalankan isi `supabase/seed.sql` (7 misi, 12 kuis, 82 soal, 7 game, 16 lencana).
+4. Jalankan isi `supabase/migrations/002_scarline_features.sql` — **aman untuk database yang sudah berisi data**: hanya menambah 5 tabel baru (`assessment_attempts`, `mistakes`, `diary_notes`, `user_preferences`, `challenge_progress`) beserta RLS, dan baris katalog game/lencana baru (`on conflict do nothing`). Tidak ada tabel atau data lama yang diubah/dihapus. Boleh dijalankan ulang.
+
+> Sebelum migrasi 002 dijalankan, fitur lama tetap berjalan normal; fitur baru menampilkan pemberitahuan “belum aktif”.
 
 Jika Anda mengubah materi/soal di `scarline/content/`, buat ulang seed:
 
@@ -173,7 +198,7 @@ Dengan Supabase CLI (opsional): `supabase db push` lalu `psql "$DATABASE_URL" -f
 ## Pengujian
 
 ```bash
-python -m pytest -q            # 175 test: matematika, bank soal, game, auth, alur belajar, XP, RLS
+python -m pytest -q            # 288 test: matematika, bank soal, game, auth, alur belajar, XP, RLS, fitur v2
 python scripts/check_js.py     # cek sintaks seluruh JavaScript
 ```
 
@@ -184,6 +209,7 @@ Cakupan test otomatis:
 - **Autentikasi**: registrasi & validasi, username unik, password salah, kolom kosong, open redirect, CSRF, lupa password, logout, perlindungan seluruh halaman privat.
 - **Alur belajar**: mini quiz → selesai misi, misi terkunci, XP tidak bertambah saat diulang/refresh, tantangan harian sekali sehari, kelima game dimainkan & tersimpan, skor dari browser diabaikan, nyawa Line Rescue, Final terkunci → terbuka, perjalanan lengkap sampai lencana SCARLINE Champion, siswa lain tidak bisa melihat riwayat.
 - **Lab**: kelima metode kalkulator + input tidak valid.
+- **Fitur v2** (`tests/test_features.py`): identitas pembuat, pre-test tidak mengunci materi, post-test terkunci → terbuka, perbandingan jujur (naik/tetap/turun, persentase saat pre-test 0), sertifikat PDF, Mistake Notebook & soal serupa, Diary CRUD + isolasi antar-siswa, preferensi & bookmark, Secret Mission berurutan, Real-Life (jawaban rupiah), tutor (mode dasar, batas pemakaian, fallback saat AI gagal), dua game baru, streak & rekomendasi, peta 12 perhentian, dan degradasi aman tanpa migrasi 002.
 
 Test memakai `tests/fakes.py` (Supabase tiruan **khusus pengujian**). Selain itu, seluruh halaman dan kelima game telah diuji di browser Edge headless (klik, jawab, selesaikan) tanpa error JavaScript, termasuk lebar layar 390 px.
 
@@ -195,7 +221,7 @@ Test memakai `tests/fakes.py` (Supabase tiruan **khusus pengujian**). Selain itu
 
 1. Push repo ke GitHub (file `.env` sudah diabaikan oleh `.gitignore`).
 2. Di <https://vercel.com> → **Add New Project** → impor repo. Vercel membaca `vercel.json` dan memakai runtime Python untuk `app.py`.
-3. **Settings → Environment Variables**: isi `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `FLASK_SECRET_KEY` (wajib — sesi disimpan di cookie bertanda tangan), `SITE_URL=https://nama-proyek.vercel.app`, dan (opsional) `REQUIRE_EMAIL_CONFIRMATION=0`.
+3. **Settings → Environment Variables**: isi `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `FLASK_SECRET_KEY` (wajib — sesi disimpan di cookie bertanda tangan), `SITE_URL=https://nama-proyek.vercel.app`, (opsional) `REQUIRE_EMAIL_CONFIRMATION=0`, dan (opsional) `ANTHROPIC_API_KEY` untuk SCAR AI Tutor.
 4. Deploy, lalu tambahkan domain Vercel ke *Site URL* dan *Redirect URLs* di Supabase.
 
 Alternatif hosting Python lain (Render, Railway, PythonAnywhere): jalankan `gunicorn app:app` dengan environment variable yang sama.
@@ -221,11 +247,21 @@ Alternatif hosting Python lain (Render, Railway, PythonAnywhere): jalankan `guni
 | Game | kenaikan dari rekor terbaik (persen × pengali kesulitan 1 / 1,25 / 1,5), maks. 150 |
 | Final Line Challenge | 2 × kenaikan nilai terbaik |
 | Tantangan harian | 10 per jawaban benar, sekali per hari |
-| Lencana | bonus 20–100 XP sekali |
+| Pre-test / post-test (pertama kali) | 30 / 50 |
+| Secret Mission (pertama kali tuntas) | 50 per misi |
+| Real-Life Challenge (pertama kali tuntas) | 40 per kasus |
+| Lencana | bonus 20–120 XP sekali |
 
 Level: Line Beginner (0) → Point Seeker (150) → Gradient Climber (350) → Equation Builder (600) → Line Engineer (900) → Equation Master (1250) → SCARLINE Legend (1700).
 
-Lencana: First Step, Coordinate Hunter, Gradient Master, Line Creator, Equation Expert, Parallel Detective, Playground Explorer, Daily Spark, SCARLINE Champion.
+Lencana: First Step, Coordinate Hunter, Gradient Master, Line Creator, Equation Expert, Parallel Detective, Playground Explorer, Daily Spark, Coordinate Explorer, Equation Solver, Graph Architect, Line Detective, Daily Streak, Rising Line, SCARLINE Champion, Master of Straight Lines.
+
+### SCAR AI Tutor (opsional)
+
+1. Buat API key di <https://console.anthropic.com>.
+2. Isi `ANTHROPIC_API_KEY` di `.env` (lokal) dan di Environment Variables Vercel. Model default `claude-opus-5-5` (ubah lewat `TUTOR_MODEL`).
+3. Kunci hanya dipakai server Python; browser tidak pernah menerimanya. Setiap sesi dibatasi 40 pertanyaan per jam untuk mengendalikan biaya. Fallback server-side Claude diaktifkan untuk permintaan yang ditolak model.
+4. Tanpa kunci, tutor dasar lokal tetap aktif (menghitung gradien & persamaan dari angka yang diketik, menjelaskan konsep, latihan, motivasi).
 
 ## Pemecahan masalah
 
